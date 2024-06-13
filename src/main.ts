@@ -14,6 +14,7 @@ async function start() {
     .setTitle('la-parole-shop')
     .setDescription('Документация REST API')
     .setVersion('0.0.1')
+    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('/api/docs', app, document);

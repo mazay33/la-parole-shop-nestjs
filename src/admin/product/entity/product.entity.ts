@@ -8,7 +8,7 @@ export class ProductEntity {
   name: string;
 
   @ApiProperty({ type: [String] })
-  img: string[];
+  img?: string[];
 
   @ApiProperty()
   sku: string;

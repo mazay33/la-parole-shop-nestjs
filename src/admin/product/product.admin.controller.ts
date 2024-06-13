@@ -2,10 +2,15 @@ import {
   Body,
   Controller,
   Post,
-  UploadedFile,
   UseInterceptors,
+  Param,
+  ParseIntPipe,
+  Put,
+  UseGuards,
+  UploadedFiles,
+  Delete,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { AdminProductService } from './product.admin.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import {
@@ -17,16 +22,73 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { ProductEntity } from './entity/product.entity';
+import { multerConfig } from 'src/upload/config/multer-config'; // Импортируем конфигурацию Multer
+import { RolesGuard } from 'src/common/guards';
+import { Role } from '@prisma/client';
+import { Roles } from 'src/common/decorators/get-current-user-role.decorator';
 
 @ApiTags('Admin Product')
 @Controller('admin/product')
+@UseGuards(RolesGuard)
+@Roles(Role.ADMIN)
+@ApiBearerAuth()
 export class AdminProductController {
   constructor(private productService: AdminProductService) {}
 
-  @Post('create')
-  @UseInterceptors(FileInterceptor('file'))
-  @ApiBearerAuth()
+  @Post('')
   @ApiOperation({ summary: 'Create a new product' })
+  @ApiBody({ type: CreateProductDto })
+  @ApiResponse({
+    status: 201,
+    description: 'The product has been successfully created.',
+    type: ProductEntity,
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  async createProduct(
+    @Body() createProductDto: CreateProductDto,
+  ): Promise<ProductEntity> {
+    return await this.productService.createProduct(createProductDto);
+  }
+
+  @Put(':id/upload')
+  @UseInterceptors(FilesInterceptor('files', 10, multerConfig))
+  @ApiOperation({ summary: 'Upload photos for the product' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'The photos have been successfully uploaded.',
+    type: ProductEntity,
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  async uploadPhoto(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFiles() files: Express.Multer.File[],
+  ): Promise<ProductEntity> {
+    if (!files || files.length === 0) {
+      throw new Error('Files are not provided');
+    }
+
+    const filenames = files.map((file) => file.filename);
+    return await this.productService.updateProductPhoto(id, filenames);
+  }
+
+  @Put(':id/photo/:photoId')
+  @UseInterceptors(FilesInterceptor('file', 1, multerConfig))
+  @ApiOperation({ summary: 'Replace a specific photo for the product' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -36,42 +98,54 @@ export class AdminProductController {
           type: 'string',
           format: 'binary',
         },
-        name: {
-          type: 'string',
-        },
-        sku: {
-          type: 'string',
-        },
-        price: {
-          type: 'number',
-        },
-        discount: {
-          type: 'number',
-        },
-        stock: {
-          type: 'number',
-        },
-        isAvailable: {
-          type: 'boolean',
-        },
-        categoryId: {
-          type: 'number',
-        },
       },
     },
   })
   @ApiResponse({
-    status: 201,
-    description: 'The product has been successfully created.',
+    status: 200,
+    description: 'The photo has been successfully replaced.',
     type: ProductEntity,
   })
   @ApiResponse({ status: 400, description: 'Bad Request' })
-  async createProduct(
-    @UploadedFile() file: Express.Multer.File,
-    @Body() createProductDto: CreateProductDto,
+  async replacePhoto(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('photoId', ParseIntPipe) photoId: number,
+    @UploadedFiles() file: Express.Multer.File[],
   ): Promise<ProductEntity> {
-    // Добавляем путь к загруженному файлу в DTO
-    createProductDto.img = [file.filename];
-    return await this.productService.createProduct(createProductDto);
+    if (!file || file.length === 0) {
+      throw new Error('File is not provided');
+    }
+
+    const filename = file[0].filename;
+    return await this.productService.replaceProductPhoto(id, photoId, filename);
+  }
+
+  @Delete(':id/photo/:photoId')
+  @ApiOperation({ summary: 'Delete a specific photo for the product' })
+  @ApiResponse({
+    status: 200,
+    description: 'The photo has been successfully deleted.',
+    type: ProductEntity,
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  async deletePhoto(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('photoId', ParseIntPipe) photoId: number,
+  ): Promise<ProductEntity> {
+    return await this.productService.deleteProductPhoto(id, photoId);
+  }
+
+  @Delete(':id/photos')
+  @ApiOperation({ summary: 'Delete all photos for the product' })
+  @ApiResponse({
+    status: 200,
+    description: 'All photos have been successfully deleted.',
+    type: ProductEntity,
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  async deleteAllPhotos(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ProductEntity> {
+    return await this.productService.deleteAllProductPhotos(id);
   }
 }

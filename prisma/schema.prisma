@@ -119,10 +119,10 @@ model WishlistProduct {
 //PRODUCT ========================================================================================
 
 model Product {
-  id   Int      @id @unique @default(autoincrement())
+  id   Int            @id @unique @default(autoincrement())
   name String
-  img  String[]
-  sku  String   @default("")
+  img  ProductImage[]
+  sku  String         @default("")
 
   price    Float
   discount Float @default(0)
@@ -147,6 +147,13 @@ model Product {
   cup_sizes       CupSize[]
   underbust_sizes UnderbustSize[]
   clothing_sizes  ClothingSize[]
+}
+
+model ProductImage {
+  id        Int      @id @unique @default(autoincrement())
+  url       String
+  product   Product? @relation(fields: [productId], references: [id])
+  productId Int?
 }
 
 model CupSize {

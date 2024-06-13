@@ -1,43 +1,45 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsString,
-  IsNumber,
   IsBoolean,
-  IsArray,
+  IsNotEmpty,
+  IsNumber,
   IsOptional,
+  IsString,
 } from 'class-validator';
 
 export class CreateProductDto {
   @ApiProperty()
-  @IsString()
+  @IsString({ message: 'Name must be a string' })
+  @IsNotEmpty()
   name: string;
 
+  @IsNotEmpty()
+  @IsOptional()
   @ApiProperty()
-  @IsString()
-  sku: string;
+  sku?: string;
 
+  @IsNotEmpty()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @ApiProperty()
-  @IsNumber()
   price: number;
 
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @ApiProperty()
-  @IsNumber()
-  discount: number;
+  discount?: number;
 
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @ApiProperty()
-  @IsNumber()
-  stock: number;
+  stock?: number;
 
-  @ApiProperty()
+  @IsNotEmpty()
   @IsBoolean()
+  @ApiProperty()
   isAvailable: boolean;
 
-  @ApiProperty()
+  @IsNotEmpty()
   @IsNumber()
+  @ApiProperty()
   categoryId: number;
-
-  @ApiProperty({ type: [String], required: false })
-  @IsArray()
-  @IsOptional()
-  img?: string[];
 }

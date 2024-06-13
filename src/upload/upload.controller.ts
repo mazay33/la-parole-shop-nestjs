@@ -12,7 +12,7 @@ import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
 export class UploadController {
   @Post('photo')
   @UseInterceptors(FileInterceptor('file'))
-  @ApiOperation({ summary: 'Upload a product photo' })
+  @ApiOperation({ summary: 'Upload photo' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -25,7 +25,7 @@ export class UploadController {
       },
     },
   })
-  uploadPhoto(@UploadedFile() file: any) {
+  uploadPhoto(@UploadedFile() file: Express.Multer.File) {
     return {
       filename: file.filename,
       path: file.path,
