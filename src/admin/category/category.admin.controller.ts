@@ -7,7 +7,7 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { CategoryService } from './category.service';
+import { CategoryService } from './category.admin.service';
 import { RolesGuard } from 'src/common/guards';
 import { Roles } from 'src/common/decorators/get-current-user-role.decorator';
 import { Role } from '@prisma/client';
