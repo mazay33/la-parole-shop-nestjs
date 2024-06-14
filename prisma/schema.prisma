@@ -8,18 +8,19 @@ datasource db {
 }
 
 //USER ========================================================================================
+enum Provider {
+  GOOGLE
+  YANDEX
+}
+
 model User {
-  id             String  @id @default(uuid())
-  email          String  @unique
-  password       String
-  role           Role    @default(USER)
-  isActivated    Boolean @default(false)
-  activationLink String
+  id       String    @id @default(uuid())
+  email    String    @unique
+  password String?
+  roles    Role[]
+  provider Provider?
 
-  hash     String  @default("")
-  hashedRt String? @default("")
-
-  refreshToken RefreshToken[]
+  Token Token[]
 
   profile  Profile?
   cart     Cart?
@@ -29,6 +30,16 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Token {
+  token     String   @unique
+  exp       DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  userAgent String   @map("user_agent")
+
+  @@map("tokens")
 }
 
 model Profile {
@@ -56,15 +67,15 @@ model Address {
   userId String @unique
 }
 
-model RefreshToken {
-  id           Int    @id @default(autoincrement())
-  refreshToken String @unique
-  user         User   @relation(fields: [userId], references: [id])
-  userId       String @unique
+// model RefreshToken {
+//   id           Int    @id @default(autoincrement())
+//   refreshToken String @unique
+//   user         User   @relation(fields: [userId], references: [id])
+//   userId       String @unique
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// }
 
 //CART ========================================================================================
 
