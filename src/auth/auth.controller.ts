@@ -26,6 +26,7 @@ import { Tokens } from './interfaces';
 
 import { Provider } from '@prisma/client';
 import { handleTimeoutAndErrors } from '@common/helpers';
+import { YandexGuard } from './guards/yandex.guard';
 
 const REFRESH_TOKEN = 'refreshtoken';
 
@@ -122,6 +123,8 @@ export class AuthController {
   @UseGuards(GoogleGuard)
   @Get('google/callback')
   googleAuthCallback(@Req() req: Request, @Res() res: Response) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
     const token = req.user['accessToken'];
     return res.redirect(
       `http://localhost:5000/api/auth/success-google?token=${token}`,
@@ -142,6 +145,39 @@ export class AuthController {
       .pipe(
         mergeMap(({ data: { email } }) =>
           this.authService.providerAuth(email, agent, Provider.GOOGLE),
+        ),
+        map((data) => this.setRefreshTokenToCookies(data, res)),
+        handleTimeoutAndErrors(),
+      );
+  }
+
+  @UseGuards(YandexGuard)
+  @Get('yandex')
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  yandexAuth() {}
+
+  @UseGuards(YandexGuard)
+  @Get('yandex/callback')
+  yandexAuthCallback(@Req() req: Request, @Res() res: Response) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //@ts-ignore
+    const token = req.user['accessToken'];
+    return res.redirect(
+      `http://localhost:5000/api/auth/success-yandex?token=${token}`,
+    );
+  }
+
+  @Get('success-yandex')
+  successYandex(
+    @Query('token') token: string,
+    @UserAgent() agent: string,
+    @Res() res: Response,
+  ) {
+    return this.httpService
+      .get(`https://login.yandex.ru/info?format=json&oauth_token=${token}`)
+      .pipe(
+        mergeMap(({ data: { default_email } }) =>
+          this.authService.providerAuth(default_email, agent, Provider.YANDEX),
         ),
         map((data) => this.setRefreshTokenToCookies(data, res)),
         handleTimeoutAndErrors(),
