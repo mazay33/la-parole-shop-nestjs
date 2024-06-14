@@ -22,10 +22,11 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { ProductEntity } from './entity/product.entity';
-import { multerConfig } from 'src/upload/config/multer-config'; // Импортируем конфигурацию Multer
+import { multerConfig } from 'src/upload/config/multer-config';
 import { RolesGuard } from 'src/common/guards';
 import { Role } from '@prisma/client';
 import { Roles } from 'src/common/decorators/get-current-user-role.decorator';
+import { UpdateProductDto } from './dto/update-product.dro';
 
 @ApiTags('Admin Product')
 @Controller('admin/product')
@@ -36,11 +37,11 @@ export class AdminProductController {
   constructor(private productService: AdminProductService) {}
 
   @Post('')
-  @ApiOperation({ summary: 'Create a new product' })
+  @ApiOperation({ summary: 'Создание нового продукта' })
   @ApiBody({ type: CreateProductDto })
   @ApiResponse({
     status: 201,
-    description: 'The product has been successfully created.',
+    description: 'Продукт успешно создан',
     type: ProductEntity,
   })
   @ApiResponse({ status: 400, description: 'Bad Request' })
@@ -50,9 +51,39 @@ export class AdminProductController {
     return await this.productService.createProduct(createProductDto);
   }
 
-  @Put(':id/upload')
+  @Put(':id')
+  @ApiOperation({ summary: 'Обновление продукта' })
+  @ApiBody({ type: UpdateProductDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Продукт успешно обновлен',
+    type: ProductEntity,
+  })
+  @ApiResponse({ status: 404, description: 'Product not found' })
+  async updateProduct(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateProductDto: UpdateProductDto,
+  ): Promise<ProductEntity> {
+    return await this.productService.updateProduct(id, updateProductDto);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Удаление выбранного продукта' })
+  @ApiResponse({
+    status: 200,
+    description: 'Продукт успешно удален',
+    type: ProductEntity,
+  })
+  @ApiResponse({ status: 404, description: 'Product not found' })
+  async deleteProduct(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ProductEntity> {
+    return await this.productService.deleteProduct(id);
+  }
+
+  @Post(':id/photo')
   @UseInterceptors(FilesInterceptor('files', 10, multerConfig))
-  @ApiOperation({ summary: 'Upload photos for the product' })
+  @ApiOperation({ summary: 'Добавление фотографий для продукта' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -88,7 +119,7 @@ export class AdminProductController {
 
   @Put(':id/photo/:photoId')
   @UseInterceptors(FilesInterceptor('file', 1, multerConfig))
-  @ApiOperation({ summary: 'Replace a specific photo for the product' })
+  @ApiOperation({ summary: 'Обновление определенной фотографии продукта' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -121,7 +152,7 @@ export class AdminProductController {
   }
 
   @Delete(':id/photo/:photoId')
-  @ApiOperation({ summary: 'Delete a specific photo for the product' })
+  @ApiOperation({ summary: 'Удаление определенной фотографии продукта' })
   @ApiResponse({
     status: 200,
     description: 'The photo has been successfully deleted.',
@@ -135,8 +166,8 @@ export class AdminProductController {
     return await this.productService.deleteProductPhoto(id, photoId);
   }
 
-  @Delete(':id/photos')
-  @ApiOperation({ summary: 'Delete all photos for the product' })
+  @Delete(':id/photo')
+  @ApiOperation({ summary: 'Удаление всех фотографий продукта' })
   @ApiResponse({
     status: 200,
     description: 'All photos have been successfully deleted.',

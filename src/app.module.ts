@@ -10,6 +10,7 @@ import { ProductService } from './product/product.service';
 import { ProductModule } from './product/product.module';
 import { AdminModule } from './admin/admin.module';
 import { UploadModule } from './upload/upload.module';
+import { CartModule } from './cart/cart.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { UploadModule } from './upload/upload.module';
     ProductModule,
     AdminModule,
     UploadModule,
+    CartModule,
   ],
   providers: [
     {

@@ -6,7 +6,9 @@ export class ProductService {
   constructor(private prisma: PrismaService) {}
 
   async getProducts() {
-    return await this.prisma.product.findMany();
+    return await this.prisma.product.findMany({
+      include: { img: true, sub_categories: true },
+    });
   }
 
   async getProductById(id: number) {
@@ -24,6 +26,7 @@ export class ProductService {
         underbust_sizes: true,
         variations: true,
         info: true,
+        img: true,
       },
     });
     if (!product) {
