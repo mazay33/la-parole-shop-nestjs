@@ -1,9 +1,9 @@
 import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
-import { ProductService } from './product.service';
 import { ApiTags } from '@nestjs/swagger';
-import { Public } from 'src/common/decorators';
+import { ProductService } from '../product.service';
+import { Public } from '@common/decorators';
 
-@ApiTags('Product')
+@ApiTags('Product Public')
 @Controller('product')
 @Public()
 export class ProductController {

@@ -1,11 +1,10 @@
 import { convertToSecondsUtil } from '@common/utils';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Role, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import { genSaltSync, hashSync } from 'bcrypt';
 import { Cache } from 'cache-manager';
-import { JwtPayload } from 'src/auth/interfaces';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -15,6 +14,10 @@ export class UserService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly configService: ConfigService,
   ) {}
+
+  async findMany() {
+    return await this.prismaService.user.findMany();
+  }
 
   async save(user: Partial<User>) {
     const hashedPassword = user?.password
@@ -66,14 +69,12 @@ export class UserService {
     return user;
   }
 
-  async delete(id: string, user: JwtPayload) {
-    if (user.id !== id && !user.roles.includes(Role.ADMIN)) {
-      throw new ForbiddenException();
+  async delete(id: string) {
+    const user = await this.findOne(id);
+    if (!user) {
+      throw new NotFoundException(`User with id - "${id}" not found`);
     }
-    await Promise.all([
-      this.cacheManager.del(id),
-      this.cacheManager.del(user.email),
-    ]);
+    await this.cacheManager.del(id);
     return this.prismaService.user.delete({
       where: { id },
       select: { id: true },
