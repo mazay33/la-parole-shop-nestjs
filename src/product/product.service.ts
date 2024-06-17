@@ -129,26 +129,28 @@ export class ProductService {
       },
     });
 
+    console.log(createProductDto.variations);
+
     if (createProductDto.variations) {
-      createProductDto.variations.forEach(async (variation) => {
+      for (const variation of createProductDto.variations) {
         await this.prisma.productVariation.create({
           data: {
             ...variation,
             productId: newProduct.id,
           },
         });
-      });
+      }
     }
 
     if (createProductDto.info) {
-      createProductDto.info.forEach(async (info) => {
+      for (const info of createProductDto.info) {
         await this.prisma.productInfo.create({
           data: {
             ...info,
             productId: newProduct.id,
           },
         });
-      });
+      }
     }
 
     return await this.getProductById(newProduct.id);
