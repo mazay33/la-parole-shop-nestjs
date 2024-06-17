@@ -129,8 +129,6 @@ export class ProductService {
       },
     });
 
-    console.log(createProductDto.variations);
-
     if (createProductDto.variations) {
       for (const variation of createProductDto.variations) {
         await this.prisma.productVariation.create({
@@ -157,10 +155,31 @@ export class ProductService {
   }
 
   async deleteProduct(id: number): Promise<number> {
-    const product = await this.prisma.product.delete({
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      include: { img: true },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    // Remove all photo files
+    await Promise.all(
+      product.img.map((photo) => unlinkAsync(`./uploads/${photo.url}`)),
+    );
+
+    // Remove all photos from the database
+    await this.prisma.productImage.deleteMany({
+      where: { productId: id },
+    });
+
+    // Remove the product
+    const deletedProduct = await this.prisma.product.delete({
       where: { id },
     });
-    return product.id;
+
+    return deletedProduct.id;
   }
 
   async updateProductPhoto(id: number, filenames: string[]): Promise<Product> {
