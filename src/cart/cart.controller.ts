@@ -8,7 +8,6 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { CartService } from './cart.service';
-import { GetCurrentUserId } from 'src/common/decorators';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -18,6 +17,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { AddProductToCartDto } from './dto/add-product-to-cart.dto';
+import { CurrentUser } from '@common/decorators';
+import { JwtPayload } from 'src/auth/interfaces';
 
 @ApiBearerAuth()
 @ApiTags('Сart')
@@ -31,39 +32,45 @@ export class CartController {
   @ApiBody({ type: AddProductToCartDto })
   @ApiResponse({ status: 201, description: 'Product added to cart' })
   async addProductToCart(
-    @GetCurrentUserId() userId: string,
+    @CurrentUser() user: JwtPayload,
     @Param('productId', ParseIntPipe) productId: number,
     @Body() addProductToCartDto: AddProductToCartDto,
   ) {
     return this.cartService.addProductToCart(
-      userId,
+      user.id,
       productId,
       addProductToCartDto.count,
     );
   }
-
   @Delete('remove/:productId')
   @ApiOperation({ summary: 'Remove product from cart' })
   @ApiParam({ name: 'productId', type: 'number' })
   @ApiResponse({ status: 200, description: 'Product removed from cart' })
   async removeProductFromCart(
-    @GetCurrentUserId() userId: string,
+    @CurrentUser() user: JwtPayload,
     @Param('productId', ParseIntPipe) productId: number,
   ) {
-    return this.cartService.removeProductFromCart(userId, productId);
+    return this.cartService.removeProductFromCart(user.id, productId);
   }
 
   @Delete('clear')
   @ApiOperation({ summary: 'Clear cart' })
   @ApiResponse({ status: 200, description: 'Cart cleared' })
-  async clearCart(@GetCurrentUserId() userId: string) {
-    return this.cartService.clearCart(userId);
+  async clearCart(@CurrentUser() user: JwtPayload) {
+    return this.cartService.clearCart(user.id);
   }
 
   @Get()
   @ApiOperation({ summary: 'Get cart' })
   @ApiResponse({ status: 200, description: 'Cart retrieved' })
-  async getCart(@GetCurrentUserId() userId: string) {
-    return this.cartService.getCart(userId);
+  async getCart(@CurrentUser() user: JwtPayload) {
+    return this.cartService.getCart(user.id);
+  }
+
+  @Get('total')
+  @ApiOperation({ summary: 'Get total price of cart' })
+  @ApiResponse({ status: 200, description: 'Cart total price retrieved' })
+  async getCartTotal(@CurrentUser() user: JwtPayload) {
+    return this.cartService.getCartTotalPrice(user.id);
   }
 }

@@ -1,183 +1,245 @@
+import { Cookie, Public, UserAgent } from '@common/decorators';
+import { HttpService } from '@nestjs/axios';
 import {
+  BadRequestException,
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Get,
-  HttpCode,
   HttpStatus,
   Post,
+  Query,
+  Req,
+  Res,
+  UnauthorizedException,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { UserResponse } from 'src/user/responses';
+import { Request, Response } from 'express';
+import { map, mergeMap } from 'rxjs';
+import { AuthService } from './auth.service';
+import { LoginDto, RegisterDto } from './dto';
+import { GoogleGuard } from './guards/google.guard';
+import { Tokens } from './interfaces';
+
+import { Provider } from '@prisma/client';
+import { handleTimeoutAndErrors } from '@common/helpers';
+import { YandexGuard } from './guards/yandex.guard';
 import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags,
-  ApiOperation,
-  ApiBody,
-  ApiBasicAuth,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { CreateUserDto } from 'src/users/dto/create-user.dto';
-import { AuthService } from './auth.service';
-import type { Tokens } from './types';
-import { GetCurrentUser, GetCurrentUserId, Public } from '../common/decorators';
-import { AtGuard, RtGuard } from 'src/common/guards';
 
-@ApiTags('Authorization')
+const REFRESH_TOKEN = 'refreshtoken';
+@ApiTags('Auth')
+@Public()
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+    private readonly httpService: HttpService,
+  ) {}
 
-  @Post('registration')
-  @Public()
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Register a new user' })
-  @ApiBody({ type: CreateUserDto })
+  @ApiOperation({ summary: 'Регистрация нового пользователя' })
+  @ApiBody({ type: RegisterDto })
   @ApiResponse({
-    status: 201,
-    description: 'User successfully created',
-    schema: {
-      example: {
-        access_token: 'string',
-        refresh_token: 'string',
-      },
-    },
+    status: HttpStatus.CREATED,
+    description: 'Пользователь успешно зарегистрирован',
+    type: UserResponse,
   })
-  @ApiResponse({
-    status: 400,
-    description: 'User with the given email already exists',
-    schema: {
-      example: {
-        statusCode: 400,
-        message: 'User with the given email already exists',
-      },
-    },
+  @ApiBadRequestResponse({
+    description: 'Не получается зарегистрировать пользователя',
   })
-  registration(@Body() userDto: CreateUserDto): Promise<Tokens> {
-    return this.authService.registration(userDto);
+  @UseInterceptors(ClassSerializerInterceptor)
+  @Post('register')
+  async register(@Body() dto: RegisterDto) {
+    const user = await this.authService.register(dto);
+    if (!user) {
+      throw new BadRequestException(
+        `Не получается зарегистрировать пользователя с данными ${JSON.stringify(dto)}`,
+      );
+    }
+    return new UserResponse(user);
   }
 
+  @ApiOperation({ summary: 'Вход пользователя' })
+  @ApiBody({ type: LoginDto })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Пользователь успешно вошел',
+  })
+  @ApiBadRequestResponse({ description: 'Не получается войти' })
   @Post('login')
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Login a user' })
-  @ApiBody({
-    schema: {
-      example: {
-        email: 'user@example.com',
-        password: 'password123',
-      },
-    },
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Login successful',
-    schema: {
-      example: {
-        access_token: 'string',
-        refresh_token: 'string',
-      },
-    },
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid email or password',
-    schema: {
-      example: {
-        statusCode: 400,
-        message: 'Invalid email or password',
-      },
-    },
-  })
-  login(
-    @Body() { email, password }: { email: string; password: string },
-  ): Promise<Tokens> {
-    return this.authService.login(email, password);
+  async login(
+    @Body() dto: LoginDto,
+    @Res() res: Response,
+    @UserAgent() agent: string,
+  ) {
+    const tokens = await this.authService.login(dto, agent);
+
+    if (!tokens) {
+      throw new BadRequestException(
+        `Не получается войти с данными ${JSON.stringify(dto)}`,
+      );
+    }
+    this.setRefreshTokenToCookies(tokens, res);
   }
 
-  @Public()
-  @UseGuards(RtGuard)
-  @Post('refresh')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Refresh tokens' })
+  @ApiOperation({ summary: 'Выход пользователя' })
+  @ApiCookieAuth()
   @ApiResponse({
-    status: 200,
-    description: 'Tokens refreshed successfully',
-    schema: {
-      example: {
-        access_token: 'string',
-        refresh_token: 'string',
-      },
-    },
+    status: HttpStatus.OK,
+    description: 'Пользователь успешно вышел',
   })
-  @ApiResponse({
-    status: 403,
-    description: 'Invalid refresh token',
-    schema: {
-      example: {
-        statusCode: 403,
-        message: 'Invalid refresh token',
-      },
-    },
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
-    schema: {
-      example: {
-        statusCode: 401,
-        message: 'Unauthorized',
-      },
-    },
-  })
-  @ApiBasicAuth()
-  refreshTokens(
-    @GetCurrentUserId() userId: string,
-    @GetCurrentUser('refreshToken') refreshToken: string,
-  ): Promise<Tokens> {
-    return this.authService.refreshTokens(userId, refreshToken);
+  @ApiBearerAuth()
+  @ApiUnauthorizedResponse({ description: 'Неавторизованный запрос' })
+  @Get('logout')
+  async logout(
+    @Cookie('refreshToken') refreshToken: string,
+    @Res() res: Response,
+  ) {
+    if (!refreshToken) {
+      res.sendStatus(HttpStatus.OK);
+      return;
+    }
+    await this.authService.deleteRefreshToken(refreshToken);
+    res.cookie('refreshToken', '', {
+      httpOnly: true,
+      secure: true,
+      expires: new Date(),
+    });
+    res.sendStatus(HttpStatus.OK);
   }
 
-  @Post('logout')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Logout a user' })
-  @ApiBasicAuth()
+  @ApiOperation({ summary: 'Обновление токенов' })
+  @ApiCookieAuth()
   @ApiResponse({
-    status: 200,
-    description: 'Logout successful',
-    schema: {
-      example: true,
-    },
+    status: HttpStatus.OK,
+    description: 'Токены успешно обновлены',
   })
-  @ApiBasicAuth()
-  logout(@GetCurrentUserId() userId: string): Promise<boolean> {
-    return this.authService.logout(userId);
+  @ApiUnauthorizedResponse({ description: 'Неавторизованный запрос' })
+  @Get('refresh-tokens')
+  async refreshTokens(
+    @Cookie(REFRESH_TOKEN) refreshToken: string,
+    @Res() res: Response,
+    @UserAgent() agent: string,
+  ) {
+    if (!refreshToken) {
+      throw new UnauthorizedException();
+    }
+    const tokens = await this.authService.refreshTokens(refreshToken, agent);
+    if (!tokens) {
+      throw new UnauthorizedException();
+    }
+    this.setRefreshTokenToCookies(tokens, res);
   }
 
-  @Get('me')
-  @UseGuards(AtGuard)
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get current user' })
+  @ApiOperation({ summary: 'Авторизация через Google' })
+  @UseGuards(GoogleGuard)
+  @Get('google')
+  googleAuth() {}
+
+  @ApiOperation({ summary: 'Callback для авторизации через Google' })
+  @UseGuards(GoogleGuard)
+  @Get('google/callback')
+  googleAuthCallback(
+    @Req() req: Request extends { user: Tokens } ? Request : any,
+    @Res() res: Response,
+  ) {
+    const token = req.user['accessToken'];
+    return res.redirect(
+      `${this.configService.get('CLIENT_URL')}/auth/success-google?token=${token}`,
+    );
+  }
+
+  @ApiOperation({ summary: 'Успешная авторизация через Google' })
+  @ApiQuery({ name: 'token', required: true })
   @ApiResponse({
-    status: 200,
-    description: 'Get current user successful',
-    schema: {
-      example: {
-        id: 'string',
-        email: 'string',
-        username: 'string',
-      },
-    },
+    status: HttpStatus.OK,
+    description: 'Успешная авторизация через Google',
   })
-  @ApiBasicAuth()
+  @Get('success-google')
+  successGoogle(
+    @Query('token') token: string,
+    @UserAgent() agent: string,
+    @Res() res: Response,
+  ) {
+    return this.httpService
+      .get(
+        `https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`,
+      )
+      .pipe(
+        mergeMap(({ data: { email } }) =>
+          this.authService.providerAuth(email, agent, Provider.GOOGLE),
+        ),
+        map((data) => this.setRefreshTokenToCookies(data, res)),
+        handleTimeoutAndErrors(),
+      );
+  }
+
+  @ApiOperation({ summary: 'Авторизация через Yandex' })
+  @UseGuards(YandexGuard)
+  @Get('yandex')
+  yandexAuth() {}
+
+  @ApiOperation({ summary: 'Callback для авторизации через Yandex' })
+  @UseGuards(YandexGuard)
+  @Get('yandex/callback')
+  yandexAuthCallback(
+    @Req() req: Request extends { user: Tokens } ? Request : any,
+    @Res() res: Response,
+  ) {
+    const token: string = req.user['accessToken'];
+    return res.redirect(
+      `${this.configService.get('CLIENT_URL')}/auth/success-yandex?token=${token}`,
+    );
+  }
+
+  @ApiOperation({ summary: 'Успешная авторизация через Yandex' })
+  @ApiQuery({ name: 'token', required: true })
   @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
-    schema: {
-      example: {
-        statusCode: 401,
-        message: 'Unauthorized',
-      },
-    },
+    status: HttpStatus.OK,
+    description: 'Успешная авторизация через Yandex',
   })
-  me(@GetCurrentUserId() userId: string) {
-    return this.authService.me(userId);
+  @Get('success-yandex')
+  successYandex(
+    @Query('token') token: string,
+    @UserAgent() agent: string,
+    @Res() res: Response,
+  ) {
+    return this.httpService
+      .get(`https://login.yandex.ru/info?format=json&oauth_token=${token}`)
+      .pipe(
+        mergeMap(({ data: { default_email } }) =>
+          this.authService.providerAuth(default_email, agent, Provider.YANDEX),
+        ),
+        map((data) => this.setRefreshTokenToCookies(data, res)),
+        handleTimeoutAndErrors(),
+      );
+  }
+
+  private setRefreshTokenToCookies(tokens: Tokens, res: Response) {
+    if (!tokens) {
+      throw new UnauthorizedException();
+    }
+    res.cookie(REFRESH_TOKEN, tokens.refreshToken.token, {
+      // httpOnly: true,
+      // sameSite: 'lax',
+      expires: new Date(tokens.refreshToken.exp),
+      secure:
+        this.configService.get('NODE_ENV', 'development') === 'production',
+      path: '/',
+    });
+    res.status(HttpStatus.CREATED).json({ accessToken: tokens.accessToken });
   }
 }

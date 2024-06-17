@@ -1,181 +1,134 @@
 import {
-  ForbiddenException,
+  ConflictException,
   HttpException,
   HttpStatus,
   Injectable,
+  Logger,
+  UnauthorizedException,
 } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateUserDto } from 'src/users/dto/create-user.dto';
-import { v4 } from 'uuid';
-import * as argon from 'argon2';
-import { UsersService } from 'src/users/users.service';
+import { LoginDto, RegisterDto } from './dto';
+import { UserService } from 'src/user/user.service';
+import { Tokens } from './interfaces';
+import { compareSync } from 'bcrypt';
+import { Provider, Token, User } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
-import { JwtPayload, Tokens } from './types';
-import { ConfigService } from '@nestjs/config';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
-import { UserDto } from 'src/users/dto/user.dto';
-import { plainToClass } from 'class-transformer';
-import { Role } from '@prisma/client';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { v4 } from 'uuid';
+import { add } from 'date-fns';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   constructor(
-    private prisma: PrismaService,
-    private jwtService: JwtService,
-    private usersService: UsersService,
-    private config: ConfigService,
+    private readonly userService: UserService,
+    private readonly jwtService: JwtService,
+    private readonly prismaService: PrismaService,
   ) {}
 
-  async registration(userDto: CreateUserDto): Promise<Tokens> {
-    const candidate = await this.usersService.getUserByEmail(userDto.email);
-    if (candidate) {
-      throw new HttpException(
-        'Пользователь с таким email существует',
-        HttpStatus.BAD_REQUEST,
-      );
+  async refreshTokens(refreshToken: string, agent: string): Promise<Tokens> {
+    const token = await this.prismaService.token.delete({
+      where: { token: refreshToken },
+    });
+    if (!token || new Date(token.exp) < new Date()) {
+      throw new UnauthorizedException();
     }
+    const user = await this.userService.findOne(token.userId);
+    return this.generateTokens(user, agent);
+  }
 
-    const hashPassword = await argon.hash(userDto.password);
-    const activationLink = v4();
-
-    const user = await this.prisma.user
-      .create({
-        data: {
-          email: userDto.email,
-          password: hashPassword,
-          role: userDto.role,
-          activationLink,
-        },
-      })
-      .catch((error) => {
-        if (error instanceof PrismaClientKnownRequestError) {
-          if (error.code === 'P2002') {
-            throw new ForbiddenException('Credentials incorrect');
-          }
-        }
-        throw error;
+  async register(dto: RegisterDto) {
+    const user: User = await this.userService
+      .findOne(dto.email)
+      .catch((err) => {
+        this.logger.error(err);
+        return null;
       });
-
-    await this.prisma.cart.create({
-      data: {
-        userId: user.id,
-      },
+    if (user) {
+      throw new ConflictException(
+        'Пользователь с таким email уже зарегистрирован',
+      );
+    }
+    return this.userService.save(dto).catch((err) => {
+      this.logger.error(err);
+      return null;
     });
-    await this.prisma.wishlist.create({
-      data: {
-        userId: user.id,
-      },
-    });
-
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
-    await this.updateRtHash(user.id, tokens.refresh_token);
-
-    return tokens;
   }
 
-  async login(email: string, password: string): Promise<Tokens> {
-    const user = await this.usersService.getUserByEmail(email);
+  async login(dto: LoginDto, agent: string): Promise<Tokens> {
+    const user: User = await this.userService
+      .findOne(dto.email, true)
+      .catch((err) => {
+        this.logger.error(err);
+        return null;
+      });
+    if (!user || !compareSync(dto.password, user.password)) {
+      throw new UnauthorizedException('Неверный логин или пароль');
+    }
+    return this.generateTokens(user, agent);
+  }
+
+  private async generateTokens(user: User, agent: string): Promise<Tokens> {
+    const accessToken =
+      'Bearer ' +
+      this.jwtService.sign({
+        id: user.id,
+        email: user.email,
+        roles: user.roles,
+      });
+    const refreshToken = await this.getRefreshToken(user.id, agent);
+    return { accessToken, refreshToken };
+  }
+
+  private async getRefreshToken(userId: string, agent: string): Promise<Token> {
+    const _token = await this.prismaService.token.findFirst({
+      where: {
+        userId,
+        userAgent: agent,
+      },
+    });
+    const token = _token?.token ?? '';
+    return this.prismaService.token.upsert({
+      where: { token },
+      update: {
+        token: v4(),
+        exp: add(new Date(), { months: 1 }),
+      },
+      create: {
+        token: v4(),
+        exp: add(new Date(), { months: 1 }),
+        userId,
+        userAgent: agent,
+      },
+    });
+  }
+
+  deleteRefreshToken(token: string) {
+    return this.prismaService.token.delete({ where: { token } });
+  }
+
+  async providerAuth(email: string, agent: string, provider: Provider) {
+    const userExists = await this.userService.findOne(email);
+    if (userExists) {
+      const user = await this.userService
+        .save({ email, provider })
+        .catch((err) => {
+          this.logger.error(err);
+          return null;
+        });
+      return this.generateTokens(user, agent);
+    }
+    const user = await this.userService
+      .save({ email, provider })
+      .catch((err) => {
+        this.logger.error(err);
+        return null;
+      });
     if (!user) {
       throw new HttpException(
-        'Пользователь с таким email не существует',
+        `Не получилось создать пользователя с email ${email} в Google auth`,
         HttpStatus.BAD_REQUEST,
       );
     }
-
-    const passwordMatches = await argon.verify(user.password, password);
-    if (!passwordMatches) {
-      throw new HttpException('Неверный пароль', HttpStatus.BAD_REQUEST);
-    }
-
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
-    await this.updateRtHash(user.id, tokens.refresh_token);
-    return tokens;
-  }
-
-  async refreshTokens(userId: string, rt: string): Promise<Tokens> {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
-    });
-    if (!user || !user.hashedRt)
-      throw new ForbiddenException('Access Denied', 'Неверный refresh token');
-
-    const rtMatches = await argon.verify(user.hashedRt, rt);
-    if (!rtMatches)
-      throw new ForbiddenException('Access Denied', 'Неверный refresh token');
-
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
-    await this.updateRtHash(user.id, tokens.refresh_token);
-
-    return tokens;
-  }
-
-  async logout(userId: string): Promise<boolean> {
-    await this.prisma.user.updateMany({
-      where: {
-        id: userId,
-        hashedRt: {
-          not: null,
-        },
-      },
-      data: {
-        hashedRt: null,
-      },
-    });
-    return true;
-  }
-
-  @ApiBearerAuth()
-  async me(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-    });
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    return plainToClass(UserDto, user, { excludeExtraneousValues: true });
-  }
-
-  async updateRtHash(userId: string, rt: string): Promise<void> {
-    const hash = await argon.hash(rt);
-    await this.prisma.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        hashedRt: hash,
-      },
-    });
-  }
-
-  async generateTokens(
-    userId: string,
-    email: string,
-    role: Role,
-  ): Promise<Tokens> {
-    const jwtPayload: JwtPayload = {
-      sub: userId,
-      email: email,
-      role: role,
-    };
-
-    const [at, rt] = await Promise.all([
-      this.jwtService.signAsync(jwtPayload, {
-        secret: this.config.get<string>('AT_SECRET'),
-        expiresIn: '6d',
-      }),
-      this.jwtService.signAsync(jwtPayload, {
-        secret: this.config.get<string>('RT_SECRET'),
-        expiresIn: '7d',
-      }),
-    ]);
-
-    return {
-      access_token: at,
-      refresh_token: rt,
-    };
+    return this.generateTokens(user, agent);
   }
 }

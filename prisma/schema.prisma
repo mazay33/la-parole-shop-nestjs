@@ -8,18 +8,19 @@ datasource db {
 }
 
 //USER ========================================================================================
+enum Provider {
+  GOOGLE
+  YANDEX
+}
+
 model User {
-  id             String  @id @default(uuid())
-  email          String  @unique
-  password       String
-  role           Role    @default(USER)
-  isActivated    Boolean @default(false)
-  activationLink String
+  id       String    @id @default(uuid())
+  email    String    @unique
+  password String?
+  roles    Role[]
+  provider Provider?
 
-  hash     String  @default("")
-  hashedRt String? @default("")
-
-  refreshToken RefreshToken[]
+  Token Token[]
 
   profile  Profile?
   cart     Cart?
@@ -29,6 +30,16 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Token {
+  token     String   @unique
+  exp       DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  userAgent String   @map("user_agent")
+
+  @@map("tokens")
 }
 
 model Profile {
@@ -54,16 +65,6 @@ model Address {
 
   user   User   @relation(fields: [userId], references: [id])
   userId String @unique
-}
-
-model RefreshToken {
-  id           Int    @id @default(autoincrement())
-  refreshToken String @unique
-  user         User   @relation(fields: [userId], references: [id])
-  userId       String @unique
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 //CART ========================================================================================
@@ -133,7 +134,7 @@ model Product {
   cart_items     CartProduct[]
   wishlist_items WishlistProduct[]
 
-  category   Category @relation(fields: [categoryId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   categoryId Int
 
   sub_categories SubCategory[]
@@ -152,7 +153,7 @@ model Product {
 model ProductImage {
   id        Int      @id @unique @default(autoincrement())
   url       String
-  product   Product? @relation(fields: [productId], references: [id])
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int?
 }
 
@@ -176,7 +177,7 @@ model ClothingSize {
 
 model ProductVariation {
   id        Int     @id @unique @default(autoincrement())
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int
   sku       String
   price     Float
@@ -188,7 +189,7 @@ model ProductInfo {
   title       String
   description String
 
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int     @unique
 
   createdAt DateTime @default(now())
@@ -211,7 +212,7 @@ model SubCategory {
   id          Int      @id @default(autoincrement())
   name        String
   description String
-  Category    Category @relation(fields: [categoryId], references: [id])
+  Category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   categoryId  Int
 
   createdAt DateTime  @default(now())
