@@ -9,7 +9,7 @@ export class YandexStrategy extends PassportStrategy(Strategy, 'yandex') {
     super({
       clientID: configService.get('YANDEX_APP_ID'), // Замените на свой APP_ID
       clientSecret: configService.get('YANDEX_APP_SECRET'), // Замените на свой APP_SECRET
-      callbackURL: 'http://localhost:5000/api/auth/yandex/callback', // Замените на свой callback URL
+      callbackURL: `${configService.get('API_URL')}/api/auth/yandex/callback`, // Замените на свой callback URL
     });
   }
 
