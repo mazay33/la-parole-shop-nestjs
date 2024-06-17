@@ -11,10 +11,50 @@ const unlinkAsync = promisify(unlink);
 export class ProductService {
   constructor(private prisma: PrismaService) {}
 
-  async getProducts() {
-    return await this.prisma.product.findMany({
+  async getProducts(
+    page?: number,
+    pageSize?: number,
+    sortBy?: string,
+    sortType?: 'asc' | 'desc',
+    name?: string,
+    sku?: string,
+  ) {
+    const totalProducts = await this.prisma.product.count({
+      where: {
+        name: { contains: name, mode: 'insensitive' },
+        sku: { contains: sku, mode: 'insensitive' },
+      },
+    });
+
+    // Если параметры не указаны, устанавливаем значения по умолчанию
+    const currentPage = page ?? 1;
+    const currentPageSize = pageSize ?? totalProducts;
+
+    const skip = (currentPage - 1) * currentPageSize;
+    const take = currentPageSize;
+
+    // Устанавливаем сортировку по умолчанию, если параметры не указаны
+    const orderBy = sortBy ? { [sortBy]: sortType ?? 'asc' } : undefined;
+
+    const products = await this.prisma.product.findMany({
+      skip,
+      take,
+      orderBy,
+      where: {
+        name: { contains: name, mode: 'insensitive' },
+        sku: { contains: sku, mode: 'insensitive' },
+      },
+
       include: { img: true, sub_categories: true, category: true },
     });
+
+    return {
+      data: products,
+      total: totalProducts,
+      page: currentPage,
+      pageSize: currentPageSize,
+      totalPages: Math.ceil(totalProducts / currentPageSize),
+    };
   }
 
   async getProductById(id: number) {
