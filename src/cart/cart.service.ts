@@ -112,4 +112,26 @@ export class CartService {
       },
     });
   }
+
+  async getCartTotalPrice(userId: string) {
+    const cart = await this.prisma.cart.findUnique({
+      where: { userId },
+      include: {
+        cart_items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    if (!cart) {
+      throw new NotFoundException('Cart not found');
+    }
+
+    return cart.cart_items.reduce(
+      (total, item) => total + item.product.price * item.count,
+      0,
+    );
+  }
 }
