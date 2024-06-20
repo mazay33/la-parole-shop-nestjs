@@ -45,7 +45,7 @@ export class ProductService {
         sku: { contains: sku, mode: 'insensitive' },
       },
 
-      include: { img: true, sub_categories: true, category: true },
+      include: { images: true, subCategories: true, category: true },
     });
 
     return {
@@ -66,13 +66,13 @@ export class ProductService {
         category: {
           select: { name: true },
         },
-        sub_categories: true,
-        cup_sizes: true,
-        clothing_sizes: true,
-        underbust_sizes: true,
-        variations: true,
+        subCategories: true,
+        cupSizes: true,
+        clothingSizes: true,
+        underbustSizes: true,
+        productVariations: true,
         info: true,
-        img: true,
+        images: true,
       },
     });
     if (!product) {
@@ -95,37 +95,37 @@ export class ProductService {
         isAvailable: createProductDto.isAvailable,
         categoryId: createProductDto.categoryId,
 
-        sub_categories: {
+        subCategories: {
           connect: createProductDto.subCategoryIds.map((subCategory) => ({
             id: subCategory,
           })),
         },
 
-        cup_sizes: {
-          connect: createProductDto.cup_sizes.map((size) => ({ id: size })),
+        cupSizes: {
+          connect: createProductDto.cupSizes.map((size) => ({ id: size })),
         },
 
-        clothing_sizes: {
-          connect: createProductDto.clothing_sizes.map((size) => ({
+        clothingSizes: {
+          connect: createProductDto.clothingSizes.map((size) => ({
             id: size,
           })),
         },
 
-        underbust_sizes: {
-          connect: createProductDto.underbust_sizes.map((size) => ({
+        underbustSizes: {
+          connect: createProductDto.underbustSizes.map((size) => ({
             id: size,
           })),
         },
       },
 
       include: {
-        img: true,
+        images: true,
         category: true,
-        sub_categories: true,
-        cup_sizes: true,
-        clothing_sizes: true,
-        underbust_sizes: true,
-        variations: true,
+        subCategories: true,
+        cupSizes: true,
+        clothingSizes: true,
+        underbustSizes: true,
+        productVariations: true,
       },
     });
 
@@ -157,7 +157,7 @@ export class ProductService {
   async deleteProduct(id: number): Promise<number> {
     const product = await this.prisma.product.findUnique({
       where: { id },
-      include: { img: true },
+      include: { images: true },
     });
 
     if (!product) {
@@ -166,7 +166,7 @@ export class ProductService {
 
     // Remove all photo files
     await Promise.all(
-      product.img.map((photo) => unlinkAsync(`./uploads/${photo.url}`)),
+      product.images.map((photo) => unlinkAsync(`./uploads/${photo.url}`)),
     );
 
     // Remove all photos from the database
@@ -185,7 +185,7 @@ export class ProductService {
   async updateProductPhoto(id: number, filenames: string[]): Promise<Product> {
     const product = await this.prisma.product.findUnique({
       where: { id },
-      include: { img: true },
+      include: { images: true },
     });
 
     if (!product) {
@@ -201,7 +201,7 @@ export class ProductService {
 
     return this.prisma.product.findUnique({
       where: { id },
-      include: { img: true },
+      include: { images: true },
     });
   }
 
@@ -212,14 +212,14 @@ export class ProductService {
   ): Promise<Product> {
     const product = await this.prisma.product.findUnique({
       where: { id },
-      include: { img: true },
+      include: { images: true },
     });
 
     if (!product) {
       throw new NotFoundException('Product not found');
     }
 
-    const photo = product.img.find((image) => image.id === photoId);
+    const photo = product.images.find((image) => image.id === photoId);
     if (!photo) {
       throw new NotFoundException('Photo not found');
     }
@@ -235,21 +235,21 @@ export class ProductService {
 
     return this.prisma.product.findUnique({
       where: { id },
-      include: { img: true },
+      include: { images: true },
     });
   }
 
   async deleteProductPhoto(id: number, photoId: number): Promise<Product> {
     const product = await this.prisma.product.findUnique({
       where: { id },
-      include: { img: true },
+      include: { images: true },
     });
 
     if (!product) {
       throw new NotFoundException('Product not found');
     }
 
-    const photo = product.img.find((image) => image.id === photoId);
+    const photo = product.images.find((image) => image.id === photoId);
     if (!photo) {
       throw new NotFoundException('Photo not found');
     }
@@ -264,14 +264,14 @@ export class ProductService {
 
     return this.prisma.product.findUnique({
       where: { id },
-      include: { img: true },
+      include: { images: true },
     });
   }
 
   async deleteAllProductPhotos(id: number): Promise<Product> {
     const product = await this.prisma.product.findUnique({
       where: { id },
-      include: { img: true },
+      include: { images: true },
     });
 
     if (!product) {
@@ -280,7 +280,7 @@ export class ProductService {
 
     // Remove all photo files
     await Promise.all(
-      product.img.map((photo) => unlinkAsync(`./uploads/${photo.url}`)),
+      product.images.map((photo) => unlinkAsync(`./uploads/${photo.url}`)),
     );
 
     // Remove all photos from the database
@@ -290,7 +290,7 @@ export class ProductService {
 
     return this.prisma.product.findUnique({
       where: { id },
-      include: { img: true },
+      include: { images: true },
     });
   }
 }

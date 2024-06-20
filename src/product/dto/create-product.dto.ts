@@ -91,7 +91,7 @@ export class CreateProductDto {
   @ApiProperty({ example: [1, 2], description: 'Cup sizes', required: false })
   @IsOptional()
   @IsArray()
-  cup_sizes?: number[];
+  cupSizes?: number[];
 
   @ApiProperty({
     example: [1, 2],
@@ -100,7 +100,7 @@ export class CreateProductDto {
   })
   @IsOptional()
   @IsArray()
-  underbust_sizes?: number[];
+  underbustSizes?: number[];
 
   @ApiProperty({
     example: [1, 2],
@@ -109,5 +109,5 @@ export class CreateProductDto {
   })
   @IsOptional()
   @IsArray()
-  clothing_sizes?: number[];
+  clothingSizes?: number[];
 }

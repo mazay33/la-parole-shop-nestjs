@@ -104,7 +104,7 @@ export class CartService {
     return this.prisma.cart.findUnique({
       where: { userId },
       include: {
-        cart_items: {
+        cartProducts: {
           include: {
             product: true,
           },
@@ -117,7 +117,7 @@ export class CartService {
     const cart = await this.prisma.cart.findUnique({
       where: { userId },
       include: {
-        cart_items: {
+        cartProducts: {
           include: {
             product: true,
           },
@@ -129,7 +129,7 @@ export class CartService {
       throw new NotFoundException('Cart not found');
     }
 
-    return cart.cart_items.reduce(
+    return cart.cartProducts.reduce(
       (total, item) => total + item.product.price * item.count,
       0,
     );

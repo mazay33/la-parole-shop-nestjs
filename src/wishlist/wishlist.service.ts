@@ -118,7 +118,7 @@ export class WishlistService {
     return this.prisma.wishlist.findUnique({
       where: { userId },
       include: {
-        wishlist_items: {
+        wishlistProducts: {
           include: {
             product: true,
           },

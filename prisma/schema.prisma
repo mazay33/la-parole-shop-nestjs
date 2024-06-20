@@ -14,22 +14,20 @@ enum Provider {
 }
 
 model User {
-  id       String    @id @default(uuid())
-  email    String    @unique
-  password String?
-  roles    Role[]
-  provider Provider?
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String?
+  roles     Role[]
+  provider  Provider?
+  tokens    Token[]
+  profile   Profile?
+  cart      Cart?
+  wishlist  Wishlist?
+  addresses Address[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  Token Token[]
-
-  profile  Profile?
-  cart     Cart?
-  wishlist Wishlist?
-
-  address Address[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  @@map("users")
 }
 
 model Token {
@@ -37,117 +35,123 @@ model Token {
   exp       DateTime
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
-  userAgent String   @map("user_agent")
+  userAgent String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("tokens")
 }
 
 model Profile {
-  id         Int     @id @default(autoincrement())
-  first_name String?
-  last_name  String?
-  phone      String? @unique
-  birthday   String?
-  user       User    @relation(fields: [userId], references: [id])
-  userId     String  @unique
-}
-
-model Address {
-  title          String
-  address_line_1 String
-  address_line_2 String
-  country        String
-  city           String
-  postal_code    String
-
+  id        Int      @id @default(autoincrement())
+  firstName String?
+  lastName  String?
+  phone     String?  @unique
+  birthday  String?
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user   User   @relation(fields: [userId], references: [id])
-  userId String @unique
+  @@map("profile")
+}
+
+model Address {
+  id           Int      @id @default(autoincrement())
+  title        String
+  addressLine1 String
+  addressLine2 String?
+  country      String
+  city         String
+  postalCode   String
+  user         User     @relation(fields: [userId], references: [id])
+  userId       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("addresses")
 }
 
 //CART ========================================================================================
 
 model Cart {
-  user       User          @relation(fields: [userId], references: [id])
-  userId     String        @unique
-  cart_items CartProduct[]
+  id           Int           @id @default(autoincrement())
+  user         User          @relation(fields: [userId], references: [id])
+  userId       String        @unique
+  cartProducts CartProduct[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  @@map("cart")
 }
 
 model CartProduct {
-  cart      Cart    @relation(fields: [cartId], references: [userId])
+  id        Int      @id @default(autoincrement())
+  cart      Cart     @relation(fields: [cartId], references: [userId])
   cartId    String
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
   productId Int
-
-  count Int
-
+  count     Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([cartId, productId], name: "UniqueCartItem")
+  @@map("cart_products")
 }
 
 //WISHLIST ========================================================================================
 
 model Wishlist {
-  user           User              @relation(fields: [userId], references: [id])
-  userId         String            @unique
-  wishlist_items WishlistProduct[]
+  id               Int               @id @default(autoincrement())
+  user             User              @relation(fields: [userId], references: [id])
+  userId           String            @unique
+  wishlistProducts WishlistProduct[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  @@map("wishlist")
 }
 
 model WishlistProduct {
+  id         Int      @id @default(autoincrement())
   wishlist   Wishlist @relation(fields: [wishlistId], references: [userId])
   wishlistId String
   product    Product  @relation(fields: [productId], references: [id])
   productId  Int
-
-  count Int
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  count      Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@unique([wishlistId, productId], name: "UniqueWishlistItem")
+  @@map("wishlist_products")
 }
 
 //PRODUCT ========================================================================================
 
 model Product {
-  id   Int            @id @unique @default(autoincrement())
-  name String
-  img  ProductImage[]
-  sku  String         @default("")
+  id                Int                @id @unique @default(autoincrement())
+  name              String
+  images            ProductImage[]
+  sku               String             @unique
+  price             Float
+  discount          Float              @default(0)
+  stock             Int                @default(0)
+  isAvailable       Boolean            @default(false)
+  cartItems         CartProduct[]
+  wishlistItems     WishlistProduct[]
+  category          Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId        Int
+  subCategories     SubCategory[]
+  info              ProductInfo[]
+  productVariations ProductVariation[]
+  cupSizes          CupSize[]
+  underbustSizes    UnderbustSize[]
+  clothingSizes     ClothingSize[]
+  beltSizes         BeltSize[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
-  price    Float
-  discount Float @default(0)
-  stock    Int   @default(0)
-
-  isAvailable Boolean @default(false)
-
-  cart_items     CartProduct[]
-  wishlist_items WishlistProduct[]
-
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  categoryId Int
-
-  sub_categories SubCategory[]
-
-  info       ProductInfo[]
-  variations ProductVariation[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  cup_sizes       CupSize[]
-  underbust_sizes UnderbustSize[]
-  clothing_sizes  ClothingSize[]
+  @@map("products")
 }
 
 model ProductImage {
@@ -155,33 +159,63 @@ model ProductImage {
   url       String
   product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("product_images")
 }
 
 model CupSize {
-  id       Int       @id @default(autoincrement())
-  size     String
-  products Product[]
+  id        Int       @id @default(autoincrement())
+  size      String
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("cup_sizes")
 }
 
 model UnderbustSize {
-  id       Int       @id @default(autoincrement())
-  size     String
-  products Product[]
+  id        Int       @id @default(autoincrement())
+  size      String
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("underbust_sizes")
 }
 
 model ClothingSize {
-  id       Int       @id @default(autoincrement())
-  size     String
-  products Product[]
+  id        Int       @id @default(autoincrement())
+  size      String
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("clothing_sizes")
+}
+
+model BeltSize {
+  id        Int       @id @default(autoincrement())
+  size      String
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("belt_sizes")
 }
 
 model ProductVariation {
-  id        Int     @id @unique @default(autoincrement())
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id        Int      @id @unique @default(autoincrement())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId Int
-  sku       String
+  sku       String   @unique
   price     Float
   name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("product_variations")
 }
 
 model ProductInfo {
@@ -194,6 +228,8 @@ model ProductInfo {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("product_info")
 }
 
 model Category {
@@ -201,23 +237,27 @@ model Category {
   name        String
   description String?
 
-  products       Product[]
-  sub_categories SubCategory[]
+  products      Product[]
+  subCategories SubCategory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("categories")
 }
 
 model SubCategory {
   id          Int      @id @default(autoincrement())
   name        String
   description String
-  Category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   categoryId  Int
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   Product   Product[]
+
+  @@map("sub_categories")
 }
 
 enum Role {
