@@ -119,20 +119,35 @@ async function main() {
     ];
 
     const cupSizes = [
-      { size: 'A' },
-      { size: 'B' },
-      { size: 'C' },
-      { size: 'D' },
-    ];
+      { size: '70A' },
+      { size: '70B' },
+      { size: '70C' },
+      { size: '70D' },
 
-    const underbustSizes = [
-      { size: '70' },
-      { size: '75' },
-      { size: '85' },
-      { size: '90' },
+      { size: '75A' },
+      { size: '75B' },
+      { size: '75C' },
+      { size: '75D' },
+
+      { size: '80A' },
+      { size: '80B' },
+      { size: '80C' },
+      { size: '80D' },
+
+      { size: '85A' },
+      { size: '85B' },
+      { size: '85C' },
+      { size: '85D' },
     ];
 
     const clothingSizes = [
+      { size: 'XS' },
+      { size: 'S' },
+      { size: 'M' },
+      { size: 'L' },
+    ];
+
+    const beltSizes = [
       { size: 'XS' },
       { size: 'S' },
       { size: 'M' },
@@ -173,22 +188,22 @@ async function main() {
       }
     }
 
-    const existingUnderbustSizes = await prisma.underbustSize.findMany();
-
-    if (existingUnderbustSizes.length === 0) {
-      for (const underbustSize of underbustSizes) {
-        await prisma.underbustSize.create({
-          data: underbustSize,
-        });
-      }
-    }
-
     const existingClothingSizes = await prisma.clothingSize.findMany();
 
     if (existingClothingSizes.length === 0) {
       for (const clothingSize of clothingSizes) {
         await prisma.clothingSize.create({
           data: clothingSize,
+        });
+      }
+    }
+
+    const existingBeltSizes = await prisma.beltSize.findMany();
+
+    if (existingBeltSizes.length === 0) {
+      for (const beltSize of beltSizes) {
+        await prisma.beltSize.create({
+          data: beltSize,
         });
       }
     }

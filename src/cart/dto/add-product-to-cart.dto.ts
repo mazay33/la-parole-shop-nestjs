@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, Max, Min } from 'class-validator';
+import { IsInt, IsOptional, Max, Min } from 'class-validator';
 
 export class AddProductToCartDto {
   @ApiProperty({
@@ -8,5 +8,33 @@ export class AddProductToCartDto {
   @IsInt()
   @Min(1)
   @Max(99)
-  count: number;
+  quantity: number;
+
+  @ApiProperty({
+    example: 1,
+  })
+  @IsInt()
+  @IsOptional()
+  configurataionId?: number;
+
+  @ApiProperty({
+    example: 1,
+  })
+  @IsInt()
+  @IsOptional()
+  cupSizeId?: number;
+
+  @ApiProperty({
+    example: 1,
+  })
+  @IsInt()
+  @IsOptional()
+  clothingSizeId?: number;
+
+  @ApiProperty({
+    example: 1,
+  })
+  @IsInt()
+  @IsOptional()
+  beltSizeId?: number;
 }

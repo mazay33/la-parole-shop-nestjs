@@ -86,16 +86,24 @@ model Cart {
 }
 
 model CartProduct {
-  id        Int      @id @default(autoincrement())
-  cart      Cart     @relation(fields: [cartId], references: [userId])
-  cartId    String
-  product   Product  @relation(fields: [productId], references: [id])
-  productId Int
-  count     Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                     Int                   @id @default(autoincrement())
+  cart                   Cart                  @relation(fields: [cartId], references: [userId])
+  cartId                 String
+  product                Product               @relation(fields: [productId], references: [id])
+  productId              Int
+  quantity               Int
+  productConfiguration   ProductConfiguration? @relation(fields: [productConfigurationId], references: [id])
+  productConfigurationId Int?
+  cupSize                CupSize?              @relation(fields: [cupSizeId], references: [id])
+  clothingSize           ClothingSize?         @relation(fields: [clothingSizeId], references: [id])
+  beltSize               BeltSize?             @relation(fields: [beltSizeId], references: [id])
+  cupSizeId              Int?
+  clothingSizeId         Int?
+  beltSizeId             Int?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
 
-  @@unique([cartId, productId], name: "UniqueCartItem")
+  @@unique([cartId, productId, productConfigurationId, clothingSizeId, cupSizeId, beltSizeId], name: "UniqueCartItem")
   @@map("cart_products")
 }
 
@@ -129,27 +137,26 @@ model WishlistProduct {
 //PRODUCT ========================================================================================
 
 model Product {
-  id                Int                @id @unique @default(autoincrement())
-  name              String
-  images            ProductImage[]
-  sku               String             @unique
-  price             Float
-  discount          Float              @default(0)
-  stock             Int                @default(0)
-  isAvailable       Boolean            @default(false)
-  cartItems         CartProduct[]
-  wishlistItems     WishlistProduct[]
-  category          Category           @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  categoryId        Int
-  subCategories     SubCategory[]
-  info              ProductInfo[]
-  productVariations ProductVariation[]
-  cupSizes          CupSize[]
-  underbustSizes    UnderbustSize[]
-  clothingSizes     ClothingSize[]
-  beltSizes         BeltSize[]
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  id                    Int                    @id @unique @default(autoincrement())
+  name                  String
+  images                ProductImage[]
+  sku                   String                 @unique
+  price                 Float
+  discount              Float                  @default(0)
+  stock                 Int                    @default(0)
+  isAvailable           Boolean                @default(false)
+  cartItems             CartProduct[]
+  wishlistItems         WishlistProduct[]
+  category              Category               @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId            Int
+  subCategories         SubCategory[]
+  info                  ProductInfo[]
+  productConfigurations ProductConfiguration[]
+  cupSizes              CupSize[]
+  clothingSizes         ClothingSize[]
+  beltSizes             BeltSize[]
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
 
   @@map("products")
 }
@@ -166,56 +173,50 @@ model ProductImage {
 }
 
 model CupSize {
-  id        Int       @id @default(autoincrement())
-  size      String
-  products  Product[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id          Int           @id @default(autoincrement())
+  size        String
+  products    Product[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  CartProduct CartProduct[]
 
   @@map("cup_sizes")
 }
 
-model UnderbustSize {
-  id        Int       @id @default(autoincrement())
-  size      String
-  products  Product[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  @@map("underbust_sizes")
-}
-
 model ClothingSize {
-  id        Int       @id @default(autoincrement())
-  size      String
-  products  Product[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id          Int           @id @default(autoincrement())
+  size        String
+  products    Product[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  CartProduct CartProduct[]
 
   @@map("clothing_sizes")
 }
 
 model BeltSize {
-  id        Int       @id @default(autoincrement())
-  size      String
-  products  Product[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id          Int           @id @default(autoincrement())
+  size        String
+  products    Product[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  CartProduct CartProduct[]
 
   @@map("belt_sizes")
 }
 
-model ProductVariation {
-  id        Int      @id @unique @default(autoincrement())
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId Int
-  sku       String   @unique
-  price     Float
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model ProductConfiguration {
+  id           Int           @id @unique @default(autoincrement())
+  product      Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId    Int
+  sku          String        @unique
+  price        Float
+  name         String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  cartProducts CartProduct[]
 
-  @@map("product_variations")
+  @@map("product_configurations")
 }
 
 model ProductInfo {

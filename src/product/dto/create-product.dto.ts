@@ -7,8 +7,6 @@ import {
   IsBoolean,
   IsArray,
 } from 'class-validator';
-import { ProductVariationDto } from './product-variation.dto';
-import { ProductInfoDto } from './product-info.dto';
 
 export class CreateProductDto {
   @ApiProperty({
@@ -29,36 +27,36 @@ export class CreateProductDto {
     description: 'Скидка на продукт в процентах',
     required: false,
   })
-  @IsOptional()
+  @IsNotEmpty()
   @IsNumber({ maxDecimalPlaces: 2 })
-  discount?: number;
+  discount: number;
 
   @ApiProperty({
     example: 50,
     description: 'Количество на складе',
     required: false,
   })
-  @IsOptional()
+  @IsNotEmpty()
   @IsNumber({ maxDecimalPlaces: 2 })
-  stock?: number;
+  stock: number;
 
   @ApiProperty({
     example: true,
     description: 'Наличие продукта',
     required: false,
   })
-  @IsOptional()
+  @IsNotEmpty()
   @IsBoolean()
-  isAvailable?: boolean;
+  isAvailable: boolean;
 
   @ApiProperty({
     example: 'SKU12345',
     description: 'Артикул продукта',
     required: false,
   })
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  sku?: string;
+  sku: string;
 
   @ApiProperty({ example: 1, description: 'Категория продукта - ID' })
   @IsNotEmpty()
@@ -75,32 +73,13 @@ export class CreateProductDto {
   subCategoryIds?: number[];
 
   @ApiProperty({
-    type: [ProductInfoDto],
-  })
-  @IsOptional()
-  @IsArray()
-  info?: ProductInfoDto[];
-
-  @ApiProperty({
-    type: [ProductVariationDto],
-  })
-  @IsOptional()
-  @IsArray()
-  variations?: ProductVariationDto[];
-
-  @ApiProperty({ example: [1, 2], description: 'Cup sizes', required: false })
-  @IsOptional()
-  @IsArray()
-  cupSizes?: number[];
-
-  @ApiProperty({
-    example: [1, 2],
-    description: 'Underbust sizes',
+    example: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+    description: 'Cup sizes',
     required: false,
   })
   @IsOptional()
   @IsArray()
-  underbustSizes?: number[];
+  cupSizes: number[];
 
   @ApiProperty({
     example: [1, 2],
@@ -109,5 +88,14 @@ export class CreateProductDto {
   })
   @IsOptional()
   @IsArray()
-  clothingSizes?: number[];
+  clothingSizes: number[];
+
+  @ApiProperty({
+    example: [1, 2],
+    description: 'Belt sizes',
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  beltSizes: number[];
 }

@@ -19,18 +19,19 @@ import {
 import { AddProductToCartDto } from './dto/add-product-to-cart.dto';
 import { CurrentUser } from '@common/decorators';
 import { JwtPayload } from 'src/auth/interfaces';
+import { Cart } from '@prisma/client';
 
 @ApiBearerAuth()
-@ApiTags('Сart')
+@ApiTags('Корзина')
 @Controller('cart')
 export class CartController {
   constructor(private readonly cartService: CartService) {}
 
   @Post('add/:productId')
-  @ApiOperation({ summary: 'Add product to cart' })
+  @ApiOperation({ summary: 'Добавить продукт в корзину' })
   @ApiParam({ name: 'productId', type: 'number' })
   @ApiBody({ type: AddProductToCartDto })
-  @ApiResponse({ status: 201, description: 'Product added to cart' })
+  @ApiResponse({ status: 201, description: 'Продукт добавлен в корзину' })
   async addProductToCart(
     @CurrentUser() user: JwtPayload,
     @Param('productId', ParseIntPipe) productId: number,
@@ -39,38 +40,61 @@ export class CartController {
     return this.cartService.addProductToCart(
       user.id,
       productId,
-      addProductToCartDto.count,
+      addProductToCartDto.quantity,
+      addProductToCartDto.configurataionId,
+      addProductToCartDto.beltSizeId,
+      addProductToCartDto.clothingSizeId,
+      addProductToCartDto.cupSizeId,
     );
   }
-  @Delete('remove/:productId')
-  @ApiOperation({ summary: 'Remove product from cart' })
+
+  @Delete('remove/:productCartId')
+  @ApiOperation({ summary: 'Удалить продукт из корзины' })
   @ApiParam({ name: 'productId', type: 'number' })
-  @ApiResponse({ status: 200, description: 'Product removed from cart' })
+  @ApiResponse({ status: 200, description: 'Продукт удален из корзины' })
   async removeProductFromCart(
     @CurrentUser() user: JwtPayload,
-    @Param('productId', ParseIntPipe) productId: number,
+    @Param('productCartId', ParseIntPipe) productCartId: number,
   ) {
-    return this.cartService.removeProductFromCart(user.id, productId);
+    return this.cartService.removeProductFromCart(user.id, productCartId);
   }
 
   @Delete('clear')
-  @ApiOperation({ summary: 'Clear cart' })
-  @ApiResponse({ status: 200, description: 'Cart cleared' })
+  @ApiOperation({ summary: 'Очистить корзину' })
+  @ApiResponse({ status: 200, description: 'Корзина очищена' })
   async clearCart(@CurrentUser() user: JwtPayload) {
     return this.cartService.clearCart(user.id);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get cart' })
-  @ApiResponse({ status: 200, description: 'Cart retrieved' })
-  async getCart(@CurrentUser() user: JwtPayload) {
+  @ApiOperation({ summary: 'Получить корзину' })
+  @ApiResponse({ status: 200, description: 'Корзина получена' })
+  async getCart(@CurrentUser() user: JwtPayload): Promise<Cart> {
     return this.cartService.getCart(user.id);
   }
 
   @Get('total')
-  @ApiOperation({ summary: 'Get total price of cart' })
-  @ApiResponse({ status: 200, description: 'Cart total price retrieved' })
-  async getCartTotal(@CurrentUser() user: JwtPayload) {
-    return this.cartService.getCartTotalPrice(user.id);
+  @ApiOperation({ summary: 'Получить общую стоимость корзины' })
+  @ApiResponse({ status: 200, description: 'Общая стоимость корзины получена' })
+  async getCartTotalPrice(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<{ totalPrice: number }> {
+    const { totalPrice } = await this.cartService.getCartSummary(user.id);
+
+    return { totalPrice };
+  }
+
+  @Get('quantity')
+  @ApiOperation({ summary: 'Получить количество продуктов в корзине' })
+  @ApiResponse({
+    status: 200,
+    description: 'Количество продуктов в корзине получено',
+  })
+  async getCartQuantity(
+    @CurrentUser() user: JwtPayload,
+  ): Promise<{ totalQuantity: number }> {
+    const { totalQuantity } = await this.cartService.getCartSummary(user.id);
+
+    return { totalQuantity };
   }
 }

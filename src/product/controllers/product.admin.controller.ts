@@ -21,7 +21,8 @@ import {
 import { CreateProductDto } from '../dto/create-product.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { multerConfig } from 'src/upload/config/multer-config';
-import { Product } from '@prisma/client';
+import { Product, ProductConfiguration } from '@prisma/client';
+import { ProductConfigurationDto } from '../dto/product-configuration.dto';
 
 @ApiTags('Admin Product')
 @Controller('admin/product')
@@ -56,6 +57,61 @@ export class ProductAdminController {
     const ProductId = await this.productService.deleteProduct(id);
 
     return { id: ProductId };
+  }
+
+  @Post('/:id/configuration')
+  @ApiOperation({ summary: 'Добавление конфигурации для продукта' })
+  @ApiBody({ type: ProductConfigurationDto })
+  @ApiResponse({
+    status: 200,
+    description: 'The configuration have been successfully created.',
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  async createProductConfiguration(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() productConfigurationDto: ProductConfigurationDto,
+  ): Promise<ProductConfiguration> {
+    return await this.productService.createProductConfiguration(
+      id,
+      productConfigurationDto,
+    );
+  }
+
+  @Put('/:id/configuration/:configurationId')
+  @ApiOperation({ summary: 'Обновление конфигурации для продукта' })
+  @ApiBody({ type: ProductConfigurationDto })
+  @ApiResponse({
+    status: 200,
+    description: 'The configuration have been successfully updated.',
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  async updateProductConfiguration(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('configurationId', ParseIntPipe) configurationId: number,
+    @Body() productConfigurationDto: Partial<ProductConfigurationDto>,
+  ): Promise<ProductConfiguration> {
+    return await this.productService.updateProductConfiguration(
+      id,
+      configurationId,
+      productConfigurationDto,
+    );
+  }
+
+  @Delete('/:id/configuration/:configurationId')
+  @ApiOperation({ summary: 'Удаление конфигурации для продукта' })
+  @ApiResponse({
+    status: 200,
+    description: 'The configuration have been successfully deleted.',
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request' })
+  async deleteProductConfiguration(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('configurationId', ParseIntPipe) configurationId: number,
+  ): Promise<ProductConfiguration> {
+    return await this.productService.deleteProductConfiguration(
+      id,
+      configurationId,
+    );
   }
 
   @Post(':id/photo')

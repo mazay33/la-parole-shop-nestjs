@@ -1,9 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Product } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { promisify } from 'util';
 import { unlink } from 'fs';
+import { ProductConfigurationDto } from './dto/product-configuration.dto';
 
 const unlinkAsync = promisify(unlink);
 
@@ -45,7 +51,13 @@ export class ProductService {
         sku: { contains: sku, mode: 'insensitive' },
       },
 
-      include: { images: true, subCategories: true, category: true },
+      include: {
+        images: { select: { id: true, url: true } },
+        category: {
+          select: { id: true, name: true, description: true },
+        },
+        subCategories: { select: { id: true, name: true } },
+      },
     });
 
     return {
@@ -64,15 +76,17 @@ export class ProductService {
       },
       include: {
         category: {
-          select: { name: true },
+          select: { id: true, name: true, description: true },
         },
-        subCategories: true,
-        cupSizes: true,
-        clothingSizes: true,
-        underbustSizes: true,
-        productVariations: true,
-        info: true,
-        images: true,
+        subCategories: { select: { id: true, name: true } },
+        cupSizes: { select: { id: true, size: true } },
+        clothingSizes: { select: { id: true, size: true } },
+        beltSizes: { select: { id: true, size: true } },
+        productConfigurations: {
+          select: { id: true, name: true, sku: true, price: true },
+        },
+        info: { select: { id: true, description: true, title: true } },
+        images: { select: { id: true, url: true } },
       },
     });
     if (!product) {
@@ -85,6 +99,19 @@ export class ProductService {
     if (!createProductDto.categoryId) {
       throw new NotFoundException('Category not found');
     }
+
+    const existingProduct = await this.prisma.product.findFirst({
+      where: {
+        sku: createProductDto.sku,
+      },
+    });
+
+    if (existingProduct) {
+      throw new BadRequestException(
+        `Product with SKU ${createProductDto.sku} already exists`,
+      );
+    }
+
     const newProduct = await this.prisma.product.create({
       data: {
         name: createProductDto.name,
@@ -94,64 +121,139 @@ export class ProductService {
         stock: createProductDto.stock,
         isAvailable: createProductDto.isAvailable,
         categoryId: createProductDto.categoryId,
-
         subCategories: {
           connect: createProductDto.subCategoryIds.map((subCategory) => ({
             id: subCategory,
           })),
         },
-
         cupSizes: {
           connect: createProductDto.cupSizes.map((size) => ({ id: size })),
         },
-
         clothingSizes: {
-          connect: createProductDto.clothingSizes.map((size) => ({
-            id: size,
-          })),
+          connect: createProductDto.clothingSizes.map((size) => ({ id: size })),
         },
-
-        underbustSizes: {
-          connect: createProductDto.underbustSizes.map((size) => ({
-            id: size,
-          })),
+        beltSizes: {
+          connect: createProductDto.beltSizes.map((size) => ({ id: size })),
         },
       },
-
       include: {
         images: true,
         category: true,
         subCategories: true,
         cupSizes: true,
         clothingSizes: true,
-        underbustSizes: true,
-        productVariations: true,
+        productConfigurations: true,
+        beltSizes: true,
+        info: true,
       },
     });
 
-    if (createProductDto.variations) {
-      for (const variation of createProductDto.variations) {
-        await this.prisma.productVariation.create({
-          data: {
-            ...variation,
-            productId: newProduct.id,
-          },
-        });
-      }
-    }
-
-    if (createProductDto.info) {
-      for (const info of createProductDto.info) {
-        await this.prisma.productInfo.create({
-          data: {
-            ...info,
-            productId: newProduct.id,
-          },
-        });
-      }
-    }
-
     return await this.getProductById(newProduct.id);
+  }
+
+  async getProductConfigurations(productId: number) {
+    return await this.prisma.productConfiguration.findMany({
+      where: {
+        productId: productId,
+      },
+    });
+  }
+
+  async createProductConfiguration(
+    productId: number,
+    createProductConfigurationDto: ProductConfigurationDto,
+  ) {
+    const existingConfiguration =
+      await this.prisma.productConfiguration.findFirst({
+        where: {
+          sku: createProductConfigurationDto.sku,
+        },
+      });
+
+    if (existingConfiguration) {
+      throw new ConflictException(
+        `Configuration with SKU ${createProductConfigurationDto.sku} already exists`,
+      );
+    }
+
+    return await this.prisma.productConfiguration.create({
+      data: {
+        ...createProductConfigurationDto,
+        productId,
+      },
+    });
+  }
+
+  async updateProductConfiguration(
+    productId: number,
+    configurationId: number,
+    updateProductConfigurationDto: Partial<ProductConfigurationDto>,
+  ) {
+    const existingConfiguration =
+      await this.prisma.productConfiguration.findFirst({
+        where: {
+          id: configurationId,
+        },
+      });
+
+    if (!existingConfiguration) {
+      throw new NotFoundException('Configuration not found');
+    }
+
+    if (existingConfiguration.productId !== productId) {
+      throw new BadRequestException(
+        'Configuration does not belong to the product',
+      );
+    }
+
+    if (updateProductConfigurationDto.sku) {
+      const existingConfigurationWithSku =
+        await this.prisma.productConfiguration.findFirst({
+          where: {
+            sku: updateProductConfigurationDto.sku,
+          },
+        });
+
+      if (
+        existingConfigurationWithSku &&
+        existingConfigurationWithSku.id !== configurationId
+      ) {
+        throw new ConflictException(
+          `Configuration with SKU ${updateProductConfigurationDto.sku} already exists`,
+        );
+      }
+    }
+
+    return await this.prisma.productConfiguration.update({
+      where: { id: configurationId },
+      data: {
+        ...updateProductConfigurationDto,
+        productId,
+      },
+    });
+  }
+
+  async deleteProductConfiguration(productId: number, configurationId: number) {
+    const existingConfiguration =
+      await this.prisma.productConfiguration.findFirst({
+        where: {
+          id: configurationId,
+        },
+      });
+
+    if (!existingConfiguration) {
+      throw new NotFoundException('Configuration not found');
+    }
+
+    if (existingConfiguration.productId !== productId) {
+      throw new BadRequestException(
+        'Configuration does not belong to the product',
+      );
+    }
+
+    return await this.prisma.productConfiguration.delete({
+      where: { id: configurationId },
+    });
   }
 
   async deleteProduct(id: number): Promise<number> {
