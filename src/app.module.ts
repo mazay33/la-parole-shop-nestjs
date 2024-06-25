@@ -14,6 +14,7 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { WishlistModule } from './wishlist/wishlist.module';
+import { SizesModule } from './sizes/sizes.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
     UserModule,
     AuthModule,
     WishlistModule,
+    SizesModule,
   ],
   providers: [
     {

@@ -105,7 +105,7 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Неавторизованный запрос' })
   @Get('logout')
   async logout(
-    @Cookie('refreshToken') refreshToken: string,
+    @Cookie(REFRESH_TOKEN) refreshToken: string,
     @Res() res: Response,
   ) {
     if (!refreshToken) {
@@ -113,7 +113,7 @@ export class AuthController {
       return;
     }
     await this.authService.deleteRefreshToken(refreshToken);
-    res.cookie('refreshToken', '', {
+    res.cookie(REFRESH_TOKEN, '', {
       httpOnly: true,
       secure: true,
       expires: new Date(),
@@ -131,6 +131,7 @@ export class AuthController {
   @Get('refresh-tokens')
   async refreshTokens(
     @Cookie(REFRESH_TOKEN) refreshToken: string,
+    @Req() req: Request,
     @Res() res: Response,
     @UserAgent() agent: string,
   ) {
@@ -238,8 +239,7 @@ export class AuthController {
       sameSite:
         this.configService.get('NODE_ENV') === 'production' ? 'lax' : 'none',
       expires: new Date(tokens.refreshToken.exp),
-      secure:
-        this.configService.get('NODE_ENV', 'development') === 'production',
+      secure: true,
       path: '/',
     });
     res.status(HttpStatus.CREATED).json({ accessToken: tokens.accessToken });
