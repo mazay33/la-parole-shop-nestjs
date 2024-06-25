@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Cart, CartProduct } from '@prisma/client';
+import { CartProduct } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ProductService } from 'src/product/product.service';
 
@@ -157,23 +157,19 @@ export class CartService {
     };
   }
 
-  async getCart(userId: string): Promise<Cart> {
-    const cart = await this.prisma.cart.findUnique({
-      where: { userId },
+  async getCartProducts(userId: string) {
+    const cartProducts = await this.prisma.cartProduct.findMany({
+      where: { cartId: userId },
       include: {
-        cartProducts: {
+        product: {
           include: {
-            product: {
-              include: {
-                images: true,
-                productConfigurations: {
-                  select: {
-                    id: true,
-                    name: true,
-                    price: true,
-                    sku: true,
-                  },
-                },
+            images: true,
+            productConfigurations: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                sku: true,
               },
             },
           },
@@ -181,11 +177,11 @@ export class CartService {
       },
     });
 
-    if (!cart) {
+    if (!cartProducts) {
       throw new NotFoundException('Cart not found');
     }
 
-    return cart;
+    return cartProducts;
   }
 
   async getCartSummary(

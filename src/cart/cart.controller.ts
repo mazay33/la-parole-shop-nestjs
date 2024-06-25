@@ -19,7 +19,6 @@ import {
 import { AddProductToCartDto } from './dto/add-product-to-cart.dto';
 import { CurrentUser } from '@common/decorators';
 import { JwtPayload } from 'src/auth/interfaces';
-import { Cart } from '@prisma/client';
 
 @ApiBearerAuth()
 @ApiTags('Корзина')
@@ -69,8 +68,8 @@ export class CartController {
   @Get()
   @ApiOperation({ summary: 'Получить корзину' })
   @ApiResponse({ status: 200, description: 'Корзина получена' })
-  async getCart(@CurrentUser() user: JwtPayload): Promise<Cart> {
-    return this.cartService.getCart(user.id);
+  async getCart(@CurrentUser() user: JwtPayload) {
+    return this.cartService.getCartProducts(user.id);
   }
 
   @Get('total')
