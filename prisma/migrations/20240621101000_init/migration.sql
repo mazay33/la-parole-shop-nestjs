@@ -72,7 +72,11 @@ CREATE TABLE "cart_products" (
     "id" SERIAL NOT NULL,
     "cartId" TEXT NOT NULL,
     "productId" INTEGER NOT NULL,
-    "count" INTEGER NOT NULL,
+    "quantity" INTEGER NOT NULL,
+    "productConfigurationId" INTEGER,
+    "cupSizeId" INTEGER,
+    "clothingSizeId" INTEGER,
+    "beltSizeId" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -139,16 +143,6 @@ CREATE TABLE "cup_sizes" (
 );
 
 -- CreateTable
-CREATE TABLE "underbust_sizes" (
-    "id" SERIAL NOT NULL,
-    "size" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "underbust_sizes_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "clothing_sizes" (
     "id" SERIAL NOT NULL,
     "size" TEXT NOT NULL,
@@ -169,7 +163,7 @@ CREATE TABLE "belt_sizes" (
 );
 
 -- CreateTable
-CREATE TABLE "product_variations" (
+CREATE TABLE "product_configurations" (
     "id" SERIAL NOT NULL,
     "productId" INTEGER NOT NULL,
     "sku" TEXT NOT NULL,
@@ -178,7 +172,7 @@ CREATE TABLE "product_variations" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "product_variations_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "product_configurations_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -223,12 +217,6 @@ CREATE TABLE "_ProductToSubCategory" (
 );
 
 -- CreateTable
-CREATE TABLE "_ProductToUnderbustSize" (
-    "A" INTEGER NOT NULL,
-    "B" INTEGER NOT NULL
-);
-
--- CreateTable
 CREATE TABLE "_CupSizeToProduct" (
     "A" INTEGER NOT NULL,
     "B" INTEGER NOT NULL
@@ -262,7 +250,7 @@ CREATE UNIQUE INDEX "profile_userId_key" ON "profile"("userId");
 CREATE UNIQUE INDEX "cart_userId_key" ON "cart"("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "cart_products_cartId_productId_key" ON "cart_products"("cartId", "productId");
+CREATE UNIQUE INDEX "cart_products_cartId_productId_productConfigurationId_cloth_key" ON "cart_products"("cartId", "productId", "productConfigurationId", "clothingSizeId", "cupSizeId", "beltSizeId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "wishlist_userId_key" ON "wishlist"("userId");
@@ -280,10 +268,10 @@ CREATE UNIQUE INDEX "products_sku_key" ON "products"("sku");
 CREATE UNIQUE INDEX "product_images_id_key" ON "product_images"("id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "product_variations_id_key" ON "product_variations"("id");
+CREATE UNIQUE INDEX "product_configurations_id_key" ON "product_configurations"("id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "product_variations_sku_key" ON "product_variations"("sku");
+CREATE UNIQUE INDEX "product_configurations_sku_key" ON "product_configurations"("sku");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "product_info_id_key" ON "product_info"("id");
@@ -296,12 +284,6 @@ CREATE UNIQUE INDEX "_ProductToSubCategory_AB_unique" ON "_ProductToSubCategory"
 
 -- CreateIndex
 CREATE INDEX "_ProductToSubCategory_B_index" ON "_ProductToSubCategory"("B");
-
--- CreateIndex
-CREATE UNIQUE INDEX "_ProductToUnderbustSize_AB_unique" ON "_ProductToUnderbustSize"("A", "B");
-
--- CreateIndex
-CREATE INDEX "_ProductToUnderbustSize_B_index" ON "_ProductToUnderbustSize"("B");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "_CupSizeToProduct_AB_unique" ON "_CupSizeToProduct"("A", "B");
@@ -340,6 +322,18 @@ ALTER TABLE "cart_products" ADD CONSTRAINT "cart_products_cartId_fkey" FOREIGN K
 ALTER TABLE "cart_products" ADD CONSTRAINT "cart_products_productId_fkey" FOREIGN KEY ("productId") REFERENCES "products"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "cart_products" ADD CONSTRAINT "cart_products_productConfigurationId_fkey" FOREIGN KEY ("productConfigurationId") REFERENCES "product_configurations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cart_products" ADD CONSTRAINT "cart_products_cupSizeId_fkey" FOREIGN KEY ("cupSizeId") REFERENCES "cup_sizes"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cart_products" ADD CONSTRAINT "cart_products_clothingSizeId_fkey" FOREIGN KEY ("clothingSizeId") REFERENCES "clothing_sizes"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cart_products" ADD CONSTRAINT "cart_products_beltSizeId_fkey" FOREIGN KEY ("beltSizeId") REFERENCES "belt_sizes"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "wishlist" ADD CONSTRAINT "wishlist_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -355,7 +349,7 @@ ALTER TABLE "products" ADD CONSTRAINT "products_categoryId_fkey" FOREIGN KEY ("c
 ALTER TABLE "product_images" ADD CONSTRAINT "product_images_productId_fkey" FOREIGN KEY ("productId") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "product_variations" ADD CONSTRAINT "product_variations_productId_fkey" FOREIGN KEY ("productId") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "product_configurations" ADD CONSTRAINT "product_configurations_productId_fkey" FOREIGN KEY ("productId") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "product_info" ADD CONSTRAINT "product_info_productId_fkey" FOREIGN KEY ("productId") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -368,12 +362,6 @@ ALTER TABLE "_ProductToSubCategory" ADD CONSTRAINT "_ProductToSubCategory_A_fkey
 
 -- AddForeignKey
 ALTER TABLE "_ProductToSubCategory" ADD CONSTRAINT "_ProductToSubCategory_B_fkey" FOREIGN KEY ("B") REFERENCES "sub_categories"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "_ProductToUnderbustSize" ADD CONSTRAINT "_ProductToUnderbustSize_A_fkey" FOREIGN KEY ("A") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "_ProductToUnderbustSize" ADD CONSTRAINT "_ProductToUnderbustSize_B_fkey" FOREIGN KEY ("B") REFERENCES "underbust_sizes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_CupSizeToProduct" ADD CONSTRAINT "_CupSizeToProduct_A_fkey" FOREIGN KEY ("A") REFERENCES "cup_sizes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
