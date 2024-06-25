@@ -12,6 +12,8 @@ services:
       - postgres
     env_file:
       - .env
+    volumes:
+      - ./uploads:/uploads
 
   postgres:
     image: postgres
