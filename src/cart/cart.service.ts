@@ -23,20 +23,30 @@ export class CartService {
     clothingSizeId?: number,
     cupSizeId?: number,
   ): Promise<CartProduct> {
+    // Проверка количества продукта
     if (quantity <= 0) {
-      throw new BadRequestException('Quantity must be greater than 0');
+      throw new BadRequestException('Количество должно быть больше 0');
     }
 
+    // Проверка наличия размеров
     if (!beltSizeId && !clothingSizeId && !cupSizeId) {
-      throw new BadRequestException(
-        'Belt size, clothing size or cup size is required',
-      );
+      throw new BadRequestException('Необходимо выбрать хотя бы один размер');
     }
 
     const product = await this.productService.getProductById(productId);
 
+    // Проверка наличия продукта
     if (!product) {
-      throw new NotFoundException('Product not found');
+      throw new NotFoundException('Товар не найден');
+    }
+
+    // Проверка размеров у товара с категорией "Комплекты"
+    if (product.category.id === 1) {
+      if (!cupSizeId || !clothingSizeId) {
+        throw new BadRequestException(
+          `Cup size and clothing size is required for this category: ${product.category.name} `,
+        );
+      }
     }
 
     if (product.productConfigurations.length > 0) {
@@ -78,8 +88,6 @@ export class CartService {
           cupSizeId,
         },
       });
-
-      console.log('cartItem', cartItem);
 
       if (cartItem) {
         return prisma.cartProduct.update({
@@ -161,6 +169,31 @@ export class CartService {
     const cartProducts = await this.prisma.cartProduct.findMany({
       where: { cartId: userId },
       include: {
+        beltSize: {
+          select: {
+            id: true,
+            size: true,
+          },
+        },
+        clothingSize: {
+          select: {
+            id: true,
+            size: true,
+          },
+        },
+        cupSize: {
+          select: {
+            id: true,
+            size: true,
+          },
+        },
+        productConfiguration: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        cart: false,
         product: {
           include: {
             images: true,
