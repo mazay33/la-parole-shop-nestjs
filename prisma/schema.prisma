@@ -13,6 +13,13 @@ enum Provider {
   YANDEX
 }
 
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
 model User {
   id        String    @id @default(uuid())
   email     String    @unique
@@ -26,6 +33,7 @@ model User {
   addresses Address[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  Order     Order[]
 
   @@map("users")
 }
@@ -107,6 +115,43 @@ model CartProduct {
   @@map("cart_products")
 }
 
+//ORDER  ==========================================================================================
+
+model Order {
+  id            Int            @id @default(autoincrement())
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  orderProducts OrderProduct[]
+  status        OrderStatus    @default(PENDING)
+  totalAmount   Float
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("orders")
+}
+
+model OrderProduct {
+  id                     Int                   @id @default(autoincrement())
+  order                  Order                 @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId                Int
+  product                Product               @relation(fields: [productId], references: [id])
+  productId              Int
+  quantity               Int
+  productConfiguration   ProductConfiguration? @relation(fields: [productConfigurationId], references: [id])
+  productConfigurationId Int?
+  cupSize                CupSize?              @relation(fields: [cupSizeId], references: [id])
+  clothingSize           ClothingSize?         @relation(fields: [clothingSizeId], references: [id])
+  beltSize               BeltSize?             @relation(fields: [beltSizeId], references: [id])
+  cupSizeId              Int?
+  clothingSizeId         Int?
+  beltSizeId             Int?
+  price                  Float
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+
+  @@map("order_products")
+}
+
 //WISHLIST ========================================================================================
 
 model Wishlist {
@@ -157,6 +202,7 @@ model Product {
   beltSizes             BeltSize[]
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
+  OrderProduct          OrderProduct[]
 
   @@map("products")
 }
@@ -173,48 +219,52 @@ model ProductImage {
 }
 
 model CupSize {
-  id          Int           @id @default(autoincrement())
-  size        String
-  products    Product[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  CartProduct CartProduct[]
+  id           Int            @id @default(autoincrement())
+  size         String
+  products     Product[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  CartProduct  CartProduct[]
+  OrderProduct OrderProduct[]
 
   @@map("cup_sizes")
 }
 
 model ClothingSize {
-  id          Int           @id @default(autoincrement())
-  size        String
-  products    Product[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  CartProduct CartProduct[]
+  id           Int            @id @default(autoincrement())
+  size         String
+  products     Product[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  CartProduct  CartProduct[]
+  OrderProduct OrderProduct[]
 
   @@map("clothing_sizes")
 }
 
 model BeltSize {
-  id          Int           @id @default(autoincrement())
-  size        String
-  products    Product[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  CartProduct CartProduct[]
+  id           Int            @id @default(autoincrement())
+  size         String
+  products     Product[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  CartProduct  CartProduct[]
+  OrderProduct OrderProduct[]
 
   @@map("belt_sizes")
 }
 
 model ProductConfiguration {
-  id           Int           @id @unique @default(autoincrement())
-  product      Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id           Int            @id @unique @default(autoincrement())
+  product      Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId    Int
-  sku          String        @unique
+  sku          String         @unique
   price        Float
   name         String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
   cartProducts CartProduct[]
+  OrderProduct OrderProduct[]
 
   @@map("product_configurations")
 }
