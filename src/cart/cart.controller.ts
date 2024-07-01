@@ -17,14 +17,18 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { AddProductToCartDto } from './dto/add-product-to-cart.dto';
-import { CurrentUser } from '@common/decorators';
+import { CurrentUser, Public } from '@common/decorators';
 import { JwtPayload } from 'src/auth/interfaces';
+import { ProductService } from 'src/product/product.service';
 
 @ApiBearerAuth()
 @ApiTags('Корзина')
 @Controller('cart')
 export class CartController {
-  constructor(private readonly cartService: CartService) {}
+  constructor(
+    private readonly cartService: CartService,
+    private readonly productService: ProductService,
+  ) {}
 
   @Post('add/:productId')
   @ApiOperation({ summary: 'Добавить продукт в корзину' })
@@ -95,5 +99,17 @@ export class CartController {
     const { totalQuantity } = await this.cartService.getCartSummary(user.id);
 
     return { totalQuantity };
+  }
+
+  @Public()
+  @Post('/products')
+  @ApiOperation({
+    summary:
+      'Получить продукты в корзине (для неавторизированного пользователя)',
+  })
+  @ApiResponse({ status: 200, description: 'Продукты в корзине получены' })
+  @ApiBody({ type: [Number] })
+  async getCartProducts(@Body() ids: number[]) {
+    return this.productService.getProductsByIds(ids);
   }
 }

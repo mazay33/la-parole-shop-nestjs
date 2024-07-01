@@ -69,6 +69,19 @@ export class ProductService {
     };
   }
 
+  async getProductsByIds(ids: number[]) {
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: ids } },
+      include: {
+        productConfigurations: {
+          select: { id: true, name: true, sku: true, price: true },
+        },
+        images: { select: { id: true, url: true } },
+      },
+    });
+    return products;
+  }
+
   async getProductById(id: number) {
     const product = await this.prisma.product.findFirst({
       where: {
