@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -10,12 +11,16 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { promisify } from 'util';
 import { unlink } from 'fs';
 import { ProductConfigurationDto } from './dto/product-configuration.dto';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 
 const unlinkAsync = promisify(unlink);
 
 @Injectable()
 export class ProductService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) {}
 
   async getProducts(
     page?: number,
@@ -25,6 +30,13 @@ export class ProductService {
     name?: string,
     sku?: string,
   ) {
+    const cacheKey = `products_${page}_${pageSize}_${sortBy}_${sortType}_${name}_${sku}`;
+    const cachedProducts = await this.cacheManager.get(cacheKey);
+
+    if (cachedProducts) {
+      return cachedProducts;
+    }
+
     const totalProducts = await this.prisma.product.count({
       where: {
         name: { contains: name, mode: 'insensitive' },
@@ -32,14 +44,12 @@ export class ProductService {
       },
     });
 
-    // Если параметры не указаны, устанавливаем значения по умолчанию
     const currentPage = page ?? 1;
     const currentPageSize = pageSize ?? totalProducts;
 
     const skip = (currentPage - 1) * currentPageSize;
     const take = currentPageSize;
 
-    // Устанавливаем сортировку по умолчанию, если параметры не указаны
     const orderBy = sortBy ? { [sortBy]: sortType ?? 'asc' } : undefined;
 
     const products = await this.prisma.product.findMany({
@@ -50,7 +60,6 @@ export class ProductService {
         name: { contains: name, mode: 'insensitive' },
         sku: { contains: sku, mode: 'insensitive' },
       },
-
       include: {
         images: { select: { id: true, url: true } },
         category: {
@@ -60,13 +69,17 @@ export class ProductService {
       },
     });
 
-    return {
+    const result = {
       data: products,
       total: totalProducts,
       page: currentPage,
       pageSize: currentPageSize,
       totalPages: Math.ceil(totalProducts / currentPageSize),
     };
+
+    await this.cacheManager.set(cacheKey, result);
+
+    return result;
   }
 
   async getProductsByIds(ids: number[]) {
@@ -77,6 +90,9 @@ export class ProductService {
           select: { id: true, name: true, sku: true, price: true },
         },
         images: { select: { id: true, url: true } },
+        clothingSizes: { select: { id: true, size: true } },
+        cupSizes: { select: { id: true, size: true } },
+        beltSizes: { select: { id: true, size: true } },
       },
     });
     return products;
