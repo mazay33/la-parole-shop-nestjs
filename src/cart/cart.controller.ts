@@ -20,6 +20,7 @@ import { AddProductToCartDto } from './dto/add-product-to-cart.dto';
 import { CurrentUser, Public } from '@common/decorators';
 import { JwtPayload } from 'src/auth/interfaces';
 import { ProductService } from 'src/product/product.service';
+import { CartProduct } from '@prisma/client';
 
 @ApiBearerAuth()
 @ApiTags('Корзина')
@@ -29,6 +30,13 @@ export class CartController {
     private readonly cartService: CartService,
     private readonly productService: ProductService,
   ) {}
+
+  @Get('products')
+  @ApiOperation({ summary: 'Получить продукты из корзины' })
+  @ApiResponse({ status: 200, description: 'Корзина получена' })
+  async getCart(@CurrentUser() user: JwtPayload): Promise<CartProduct[]> {
+    return this.cartService.getCartProducts(user.id);
+  }
 
   @Post('add/:productId')
   @ApiOperation({ summary: 'Добавить продукт в корзину' })
@@ -44,7 +52,7 @@ export class CartController {
       user.id,
       productId,
       addProductToCartDto.quantity,
-      addProductToCartDto.configurataionId,
+      addProductToCartDto.productConfigurationId,
       addProductToCartDto.beltSizeId,
       addProductToCartDto.clothingSizeId,
       addProductToCartDto.cupSizeId,
@@ -67,13 +75,6 @@ export class CartController {
   @ApiResponse({ status: 200, description: 'Корзина очищена' })
   async clearCart(@CurrentUser() user: JwtPayload) {
     return this.cartService.clearCart(user.id);
-  }
-
-  @Get()
-  @ApiOperation({ summary: 'Получить корзину' })
-  @ApiResponse({ status: 200, description: 'Корзина получена' })
-  async getCart(@CurrentUser() user: JwtPayload) {
-    return this.cartService.getCartProducts(user.id);
   }
 
   @Get('total')

@@ -188,10 +188,7 @@ export class CartService {
           },
         },
         productConfiguration: {
-          select: {
-            id: true,
-            name: true,
-          },
+          select: { id: true, name: true, sku: true, price: true },
         },
         cart: false,
         product: {
@@ -203,6 +200,24 @@ export class CartService {
                 name: true,
                 price: true,
                 sku: true,
+              },
+            },
+            cupSizes: {
+              select: {
+                id: true,
+                size: true,
+              },
+            },
+            clothingSizes: {
+              select: {
+                id: true,
+                size: true,
+              },
+            },
+            beltSizes: {
+              select: {
+                id: true,
+                size: true,
               },
             },
           },

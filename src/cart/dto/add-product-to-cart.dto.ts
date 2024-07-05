@@ -15,7 +15,7 @@ export class AddProductToCartDto {
   })
   @IsInt()
   @IsOptional()
-  configurataionId?: number;
+  productConfigurationId?: number;
 
   @ApiProperty({
     example: 1,
