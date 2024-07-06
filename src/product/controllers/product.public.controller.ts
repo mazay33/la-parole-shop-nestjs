@@ -34,6 +34,31 @@ export class ProductController {
     );
   }
 
+  @Get('similar-list')
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number })
+  @ApiQuery({ name: 'sortBy', required: false, type: String })
+  @ApiQuery({ name: 'sortType', required: false, enum: ['asc', 'desc'] })
+  @ApiQuery({ name: 'name', required: false, type: String })
+  @ApiQuery({ name: 'sku', required: false, type: String })
+  async getSimilarProducts(
+    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+    @Query('pageSize', new ParseIntPipe({ optional: true })) pageSize?: number,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortType') sortType?: 'asc' | 'desc',
+    @Query('name') name?: string,
+    @Query('sku') sku?: string,
+  ) {
+    return await this.productService.getSimilarProducts(
+      page,
+      pageSize,
+      sortBy,
+      sortType,
+      name,
+      sku,
+    );
+  }
+
   @Get(':id')
   async getProduct(@Param('id', ParseIntPipe) id: number) {
     return await this.productService.getProductById(id);
