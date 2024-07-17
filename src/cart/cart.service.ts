@@ -112,6 +112,47 @@ export class CartService {
     });
   }
 
+  async updateCartProduct(
+    userId: string,
+    productCartId: number,
+    quantity: number,
+    productConfigurationId?: number,
+    beltSizeId?: number,
+    clothingSizeId?: number,
+    cupSizeId?: number,
+  ): Promise<CartProduct> {
+    const cart = await this.prisma.cart.findUnique({
+      where: { userId },
+    });
+
+    if (!cart) {
+      throw new NotFoundException('Cart not found');
+    }
+
+    const cartItem = await this.prisma.cartProduct.findUnique({
+      where: {
+        id: productCartId,
+      },
+    });
+
+    if (!cartItem) {
+      throw new NotFoundException('Product not found in cart');
+    }
+
+    return await this.prisma.cartProduct.update({
+      where: {
+        id: productCartId,
+      },
+      data: {
+        beltSizeId,
+        clothingSizeId,
+        cupSizeId,
+        productConfigurationId,
+        quantity,
+      },
+    });
+  }
+
   async removeProductFromCart(
     userId: string,
     cartProductId: number,
@@ -168,6 +209,7 @@ export class CartService {
   async getCartProducts(userId: string) {
     const cartProducts = await this.prisma.cartProduct.findMany({
       where: { cartId: userId },
+      orderBy: { createdAt: 'desc' },
       include: {
         beltSize: {
           select: {

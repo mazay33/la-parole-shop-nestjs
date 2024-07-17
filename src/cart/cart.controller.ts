@@ -6,6 +6,7 @@ import {
   Body,
   Param,
   ParseIntPipe,
+  Put,
 } from '@nestjs/common';
 import { CartService } from './cart.service';
 import {
@@ -51,6 +52,27 @@ export class CartController {
     return this.cartService.addProductToCart(
       user.id,
       productId,
+      addProductToCartDto.quantity,
+      addProductToCartDto.productConfigurationId,
+      addProductToCartDto.beltSizeId,
+      addProductToCartDto.clothingSizeId,
+      addProductToCartDto.cupSizeId,
+    );
+  }
+
+  @Put('update/:productCartId')
+  @ApiOperation({ summary: 'Изменить продукт в корзине' })
+  @ApiParam({ name: 'productCartId', type: 'number' })
+  @ApiBody({ type: AddProductToCartDto })
+  @ApiResponse({ status: 200, description: 'Количество продукта изменено' })
+  async updateProduct(
+    @CurrentUser() user: JwtPayload,
+    @Param('productCartId', ParseIntPipe) productCartId: number,
+    @Body() addProductToCartDto: AddProductToCartDto,
+  ) {
+    return this.cartService.updateCartProduct(
+      user.id,
+      productCartId,
       addProductToCartDto.quantity,
       addProductToCartDto.productConfigurationId,
       addProductToCartDto.beltSizeId,
