@@ -1,4 +1,11 @@
-import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseArrayPipe,
+  ParseIntPipe,
+  Query,
+} from '@nestjs/common';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ProductService } from '../product.service';
 import { Public } from '@common/decorators';
@@ -16,6 +23,8 @@ export class ProductController {
   @ApiQuery({ name: 'sortType', required: false, enum: ['asc', 'desc'] })
   @ApiQuery({ name: 'name', required: false, type: String })
   @ApiQuery({ name: 'sku', required: false, type: String })
+  @ApiQuery({ name: 'categoryId', required: false, type: Number })
+  @ApiQuery({ name: 'subCategoryIds', required: false, type: [Number] })
   async getProducts(
     @Query('page', new ParseIntPipe({ optional: true })) page?: number,
     @Query('pageSize', new ParseIntPipe({ optional: true })) pageSize?: number,
@@ -23,6 +32,13 @@ export class ProductController {
     @Query('sortType') sortType?: 'asc' | 'desc',
     @Query('name') name?: string,
     @Query('sku') sku?: string,
+    @Query('categoryId', new ParseIntPipe({ optional: true }))
+    categoryId?: number,
+    @Query(
+      'subCategoryIds',
+      new ParseArrayPipe({ items: Number, optional: true }),
+    )
+    subCategoryIds?: number[],
   ) {
     return await this.productService.getProducts(
       page,
@@ -31,6 +47,8 @@ export class ProductController {
       sortType,
       name,
       sku,
+      categoryId,
+      subCategoryIds,
     );
   }
 

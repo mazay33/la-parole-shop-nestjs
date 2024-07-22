@@ -29,8 +29,10 @@ export class ProductService {
     sortType?: 'asc' | 'desc',
     name?: string,
     sku?: string,
+    categoryId?: number,
+    subCategoryIds?: number[],
   ) {
-    const cacheKey = `products_${page}_${pageSize}_${sortBy}_${sortType}_${name}_${sku}`;
+    const cacheKey = `products_${page}_${pageSize}_${sortBy}_${sortType}_${name}_${sku}_${categoryId}_${subCategoryIds}`;
     const cachedProducts = await this.cacheManager.get(cacheKey);
 
     if (cachedProducts) {
@@ -41,6 +43,7 @@ export class ProductService {
       where: {
         name: { contains: name, mode: 'insensitive' },
         sku: { contains: sku, mode: 'insensitive' },
+        category: { id: categoryId },
       },
     });
 
@@ -59,6 +62,10 @@ export class ProductService {
       where: {
         name: { contains: name, mode: 'insensitive' },
         sku: { contains: sku, mode: 'insensitive' },
+        category: { id: categoryId },
+        subCategories: subCategoryIds && {
+          some: { id: { in: subCategoryIds } },
+        },
       },
       include: {
         images: { select: { id: true, url: true } },
@@ -179,6 +186,26 @@ export class ProductService {
 
     return await this.getProductById(newProduct.id);
   }
+
+  // async updateProduct(
+  //   id: number,
+  //   updateProductDto: UpdateProductDto,
+  // ): Promise<Product> {
+  //   return await this.prisma.product.update({
+  //     where: { id },
+  //     data: updateProductDto,
+  //     include: {
+  //       images: true,
+  //       category: true,
+  //       subCategories: true,
+  //       cupSizes: true,
+  //       clothingSizes: true,
+  //       productConfigurations: true,
+  //       beltSizes: true,
+  //       info: true,
+  //     },
+  //   });
+  // }
 
   async getProductConfigurations(productId: number) {
     return await this.prisma.productConfiguration.findMany({
