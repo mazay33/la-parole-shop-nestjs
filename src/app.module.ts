@@ -16,6 +16,7 @@ import { join } from 'path';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { SizesModule } from './sizes/sizes.module';
 import { CacheModule } from '@nestjs/cache-manager';
+import { CategoryModule } from './category/category.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { CacheModule } from '@nestjs/cache-manager';
     AuthModule,
     WishlistModule,
     SizesModule,
+    CategoryModule,
   ],
   providers: [
     {
