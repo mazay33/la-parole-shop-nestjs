@@ -171,7 +171,6 @@ model WishlistProduct {
   wishlistId String
   product    Product  @relation(fields: [productId], references: [id])
   productId  Int
-  count      Int
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
