@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
@@ -9,7 +8,6 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
-  ApiBody,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -18,7 +16,6 @@ import {
 import { WishlistService } from './wishlist.service';
 import { CurrentUser } from '@common/decorators';
 import { JwtPayload } from 'src/auth/interfaces';
-import { AddProductToWishlistDto } from './dto/add-product-to-cart.dto';
 
 @ApiBearerAuth()
 @ApiTags('Wishlist')
@@ -29,20 +26,12 @@ export class WishlistController {
   @Post('add/:productId')
   @ApiOperation({ summary: 'Add product to wishlist' })
   @ApiParam({ name: 'productId', type: 'number' })
-  @ApiBody({ type: AddProductToWishlistDto })
   @ApiResponse({ status: 201, description: 'Product added to wishlist' })
   async addProductTowishlist(
     @CurrentUser() user: JwtPayload,
     @Param('productId', ParseIntPipe) productId: number,
-    @Body() addProductTowishlistDto: AddProductToWishlistDto,
   ) {
-    console.log(addProductTowishlistDto);
-
-    return this.wishlistService.addProductToWishlist(
-      user.id,
-      productId,
-      addProductTowishlistDto.count,
-    );
+    return this.wishlistService.addProductToWishlist(user.id, productId);
   }
   @Delete('remove/:productId')
   @ApiOperation({ summary: 'Remove product from wishlist' })

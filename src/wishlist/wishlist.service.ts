@@ -8,7 +8,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 @Injectable()
 export class WishlistService {
   constructor(private prisma: PrismaService) {}
-  async addProductToWishlist(userId: string, productId: number, count: number) {
+  async addProductToWishlist(userId: string, productId: number) {
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
     });
@@ -50,7 +50,6 @@ export class WishlistService {
 
       const wishlistProduct = await this.prisma.wishlistProduct.create({
         data: {
-          count: count,
           wishlist: {
             connect: {
               userId: userId,
@@ -80,7 +79,6 @@ export class WishlistService {
       where: {
         wishlistId: wishlist.userId,
         productId: productId,
-        count: 1,
       },
     });
 
@@ -120,7 +118,14 @@ export class WishlistService {
       include: {
         wishlistProducts: {
           include: {
-            product: true,
+            product: {
+              include: {
+                images: true,
+                category: true,
+                subCategories: true,
+              },
+            },
+            wishlist: false,
           },
         },
       },
