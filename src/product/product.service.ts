@@ -30,9 +30,9 @@ export class ProductService {
     name?: string,
     sku?: string,
     categoryId?: number,
-    subCategoryIds?: number[],
+    subCategoryId?: number,
   ) {
-    const cacheKey = `products_${page}_${pageSize}_${sortBy}_${sortType}_${name}_${sku}_${categoryId}_${subCategoryIds}`;
+    const cacheKey = `products_${page}_${pageSize}_${sortBy}_${sortType}_${name}_${sku}_${categoryId}_${subCategoryId}`;
     const cachedProducts = await this.cacheManager.get(cacheKey);
 
     if (cachedProducts) {
@@ -63,9 +63,9 @@ export class ProductService {
         name: { contains: name, mode: 'insensitive' },
         sku: { contains: sku, mode: 'insensitive' },
         category: { id: categoryId },
-        subCategories: subCategoryIds && {
-          some: { id: { in: subCategoryIds } },
-        },
+        subCategories: subCategoryId
+          ? { some: { id: subCategoryId } }
+          : undefined,
       },
       include: {
         images: { select: { id: true, url: true } },
@@ -163,10 +163,16 @@ export class ProductService {
           })),
         },
         cupSizes: {
-          connect: createProductDto.cupSizes.map((size) => ({ id: size })),
+          connect:
+            createProductDto.cupSizes &&
+            createProductDto.cupSizes.length > 0 &&
+            createProductDto.cupSizes.map((size) => ({ id: size })),
         },
         clothingSizes: {
-          connect: createProductDto.clothingSizes.map((size) => ({ id: size })),
+          connect:
+            createProductDto.clothingSizes &&
+            createProductDto.clothingSizes.length > 0 &&
+            createProductDto.clothingSizes.map((size) => ({ id: size })),
         },
         beltSizes: {
           connect: createProductDto.beltSizes.map((size) => ({ id: size })),

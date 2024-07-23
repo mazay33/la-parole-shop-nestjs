@@ -34,11 +34,8 @@ export class ProductController {
     @Query('sku') sku?: string,
     @Query('categoryId', new ParseIntPipe({ optional: true }))
     categoryId?: number,
-    @Query(
-      'subCategoryIds',
-      new ParseArrayPipe({ items: Number, optional: true }),
-    )
-    subCategoryIds?: number[],
+    @Query('subCategoryId', new ParseIntPipe({ optional: true }))
+    subCategoryId?: number,
   ) {
     return await this.productService.getProducts(
       page,
@@ -48,7 +45,7 @@ export class ProductController {
       name,
       sku,
       categoryId,
-      subCategoryIds,
+      subCategoryId,
     );
   }
 
