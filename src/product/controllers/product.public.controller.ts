@@ -24,7 +24,11 @@ export class ProductController {
   @ApiQuery({ name: 'name', required: false, type: String })
   @ApiQuery({ name: 'sku', required: false, type: String })
   @ApiQuery({ name: 'categoryId', required: false, type: Number })
-  @ApiQuery({ name: 'subCategoryIds', required: false, type: [Number] })
+  @ApiQuery({
+    name: 'subCategoryId',
+    required: false,
+    type: Number,
+  })
   async getProducts(
     @Query('page', new ParseIntPipe({ optional: true })) page?: number,
     @Query('pageSize', new ParseIntPipe({ optional: true })) pageSize?: number,
@@ -34,7 +38,10 @@ export class ProductController {
     @Query('sku') sku?: string,
     @Query('categoryId', new ParseIntPipe({ optional: true }))
     categoryId?: number,
-    @Query('subCategoryId', new ParseIntPipe({ optional: true }))
+    @Query(
+      'subCategoryId',
+      new ParseArrayPipe({ items: Number, optional: true }),
+    )
     subCategoryId?: number,
   ) {
     return await this.productService.getProducts(
