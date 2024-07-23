@@ -17,6 +17,8 @@ import { WishlistModule } from './wishlist/wishlist.module';
 import { SizesModule } from './sizes/sizes.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { CategoryModule } from './category/category.module';
+import { SubCategoryService } from './sub-category/sub-category.service';
+import { SubCategoryModule } from './sub-category/sub-category.module';
 
 @Module({
   imports: [
@@ -36,6 +38,7 @@ import { CategoryModule } from './category/category.module';
     WishlistModule,
     SizesModule,
     CategoryModule,
+    SubCategoryModule,
   ],
   providers: [
     {
@@ -43,6 +46,7 @@ import { CategoryModule } from './category/category.module';
       useClass: JwtAuthGuard,
     },
     ProductService,
+    SubCategoryService,
   ],
 })
 export class AppModule {}
