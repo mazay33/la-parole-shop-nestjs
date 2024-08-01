@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  ParseArrayPipe,
-  ParseIntPipe,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ProductService } from '../product.service';
 import { Public } from '@common/decorators';
@@ -38,10 +31,7 @@ export class ProductController {
     @Query('sku') sku?: string,
     @Query('categoryId', new ParseIntPipe({ optional: true }))
     categoryId?: number,
-    @Query(
-      'subCategoryId',
-      new ParseArrayPipe({ items: Number, optional: true }),
-    )
+    @Query('subCategoryId', new ParseIntPipe({ optional: true }))
     subCategoryId?: number,
   ) {
     return await this.productService.getProducts(

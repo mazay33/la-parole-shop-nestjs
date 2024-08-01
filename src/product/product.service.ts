@@ -44,6 +44,9 @@ export class ProductService {
         name: { contains: name, mode: 'insensitive' },
         sku: { contains: sku, mode: 'insensitive' },
         category: { id: categoryId },
+        subCategories: subCategoryId
+          ? { some: { id: subCategoryId } }
+          : undefined,
       },
     });
 
