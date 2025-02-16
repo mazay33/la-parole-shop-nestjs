@@ -1,73 +1,124 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# La Parole Shop - Nest.js & Prisma Application
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Полноценное руководство по запуску и настройке проекта.  
+**Версия:** 1.0.0  
+**Технологии:** Nest.js 9+, Prisma 5+, PostgreSQL 15+, Docker 24+
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+[![NestJS](https://img.shields.io/badge/NestJS-E0234E?style=for-the-badge&logo=nestjs&logoColor=white)](https://nestjs.com/)
+[![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://prisma.io/)
 
-## Description
+## Содержание
+1. [Требования](#-требования)
+2. [Быстрый старт](#-быстрый-старт)
+3. [Конфигурация](#-конфигурация)
+4. [Работа с БД](#-работа-с-бд)
+5. [Docker-развертывание](#-docker-развертывание)
+6. [Тестирование](#-тестирование)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+---
 
-## Installation
+## ⚙️ Требования
 
+- Node.js v18.16.0+
+- pnpm 8.6.0+
+- Docker Engine 24.0+ 
+- Docker Compose 2.20+
+- PostgreSQL 15.4+
+
+---
+
+## 🚀 Быстрый старт
+
+### Локальная установка
 ```bash
-$ pnpm install
+# 1. Клонировать репозиторий
+git clone https://github.com/mazay33/la-parole-shop.git
+cd la-parole-shop
+
+# 2. Установить зависимости
+pnpm install #npm install -g pnpm (if no pnpm)
+
+# 3. Инициализировать окружение
+cp .env.example .env
+nano .env  # Редактировать параметры
+
+# 4. Запустить БД и приложение
+docker-compose up -d postgres  # Только PostgreSQL
+npx prisma generate
+pnpm prisma migrate dev --name init
+pnpm start:dev
 ```
 
-## Running the app
-
+Production-сборка
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+pnpm build
+pnpm start:migrate:prod
 ```
 
-## Test
+## 🔧 Конфигурация
 
-```bash
-# unit tests
-$ pnpm run test
+Основные переменные (.env)
 
-# e2e tests
-$ pnpm run test:e2e
+```
+PORT=3000
+DB_NAME=la-parole-shop
+DB_HOST=localhost # postgres (if you use docker)
+DB_USER=postgres
+DB_PASSWORD=your_db_password
+DB_PORT=5432
+JWT_SECRET=your_jwt_secret
+JWT_EXP=1d
+SMTP_HOST="your_smtp_host"
+SMTP_PORT=your_smtp_port
+SMTP_USER=your_email@gmail.com
+SMTP_PASSWORD=your_email_password
+API_URL=http://localhost:3000
+CLIENT_URL=http://localhost:4000
 
-# test coverage
-$ pnpm run test:cov
+GOOGLE_CLIENT_ID="your_google_client_id"
+GOOGLE_CLIENT_SECRET="your_google_client_secret"
+
+YANDEX_APP_ID="your_yandex_app_id"
+YANDEX_APP_SECRET="your_yandex_app_secret"
+
+DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=public"
+
+NODE_ENV=dev
+
 ```
 
-## Support
+## 🗃️ Работа с БД
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+# Создать новую миграцию
+pnpm prisma migrate dev --name add_user_table
 
-## Stay in touch
+# Применить миграции в production
+pnpm prisma migrate deploy
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+# Генерация клиента Prisma
+pnpm prisma generate
+```
 
-## License
+### 🐳 Docker-развертывание
+```bash
+# Запуск в фоне
+docker-compose up -d --build
 
-Nest is [MIT licensed](LICENSE).
+# Просмотр логов
+docker-compose logs -f app
+
+# Остановка
+docker-compose down -v
+```
+
+
+### 🧪 Тестирование
+
+```bash
+# Unit-тесты
+pnpm test
+
+# Запуск линтеров
+pnpm lint
+```
