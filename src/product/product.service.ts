@@ -92,6 +92,57 @@ export class ProductService {
     return result;
   }
 
+  async getSimilarProducts(
+    page?: number,
+    pageSize?: number,
+    sortBy?: string,
+    sortType?: 'asc' | 'desc',
+    name?: string,
+    sku?: string,
+  ) {
+    const totalProducts = await this.prisma.product.count({
+      where: {
+        name: { contains: name, mode: 'insensitive' },
+        sku: { not: sku, mode: 'insensitive' },
+      },
+    });
+
+    const currentPage = page ?? 1;
+    const currentPageSize = pageSize ?? totalProducts;
+
+    const skip = (currentPage - 1) * currentPageSize;
+    const take = currentPageSize;
+
+    const orderBy = sortBy ? { [sortBy]: sortType ?? 'asc' } : undefined;
+
+    const products = await this.prisma.product.findMany({
+      skip,
+      take,
+      orderBy,
+      where: {
+        name: { contains: name, mode: 'insensitive' },
+        sku: { not: sku, mode: 'insensitive' },
+      },
+      include: {
+        images: { select: { id: true, url: true } },
+        category: {
+          select: { id: true, name: true, description: true },
+        },
+        subCategories: { select: { id: true, name: true } },
+      },
+    });
+
+    const result = {
+      data: products,
+      total: totalProducts,
+      page: currentPage,
+      pageSize: currentPageSize,
+      totalPages: Math.ceil(totalProducts / currentPageSize),
+    };
+
+    return result;
+  }
+
   async getProductsByIds(ids: number[]) {
     const products = await this.prisma.product.findMany({
       where: { id: { in: ids } },
