@@ -2,7 +2,7 @@ name: Deploy
 
 # Controls when the action will run.
 on:
-  # Triggers the workflow on push or pull request events but only for the master branch
+  # Triggers the workflow on push or pull request events but only for the main branch
   push:
     branches: [ main ]
 
@@ -15,6 +15,21 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '20'
+
+    - name: Install dependencies
+      run: npm install -g pnpm
+      run: pnpm install
+
+    - name: Run tests
+      run: pnpm run test
+
     - name: Deploy using ssh
       uses: appleboy/ssh-action@master
       with:
@@ -23,7 +38,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
         script: |
-          cd  la-parole-shop-nestjs
+          cd la-parole-shop-nestjs
           git pull origin main
           git status
           docker compose up --build -d nest-api
