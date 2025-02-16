@@ -189,6 +189,8 @@ model Product {
   discount              Float                  @default(0)
   stock                 Int                    @default(0)
   isAvailable           Boolean                @default(false)
+  isNew                 Boolean                @default(false)
+  isBestseller          Boolean                @default(false)
   cartItems             CartProduct[]
   wishlistItems         WishlistProduct[]
   category              Category               @relation(fields: [categoryId], references: [id], onDelete: Cascade)

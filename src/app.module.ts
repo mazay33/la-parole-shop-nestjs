@@ -19,6 +19,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { CategoryModule } from './category/category.module';
 import { SubCategoryService } from './sub-category/sub-category.service';
 import { SubCategoryModule } from './sub-category/sub-category.module';
+import { OrderModule } from './order/order.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { SubCategoryModule } from './sub-category/sub-category.module';
     SizesModule,
     CategoryModule,
     SubCategoryModule,
+    OrderModule,
   ],
   providers: [
     {

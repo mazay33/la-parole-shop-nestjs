@@ -11,6 +11,7 @@ COPY prisma ./prisma/
 # Install app dependencies
 RUN npm install -g pnpm
 RUN pnpm install
+RUN npx prisma generate
 
 COPY . .
 

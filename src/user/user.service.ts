@@ -3,9 +3,9 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { User } from '@prisma/client';
-import { genSaltSync, hashSync } from 'bcrypt';
 import { Cache } from 'cache-manager';
 import { PrismaService } from 'src/prisma/prisma.service';
+import * as argon2 from 'argon2';
 
 @Injectable()
 export class UserService {
@@ -13,7 +13,7 @@ export class UserService {
     private readonly prismaService: PrismaService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   async findMany() {
     return await this.prismaService.user.findMany();
@@ -21,7 +21,7 @@ export class UserService {
 
   async save(user: Partial<User>) {
     const hashedPassword = user?.password
-      ? this.hashPassword(user.password)
+      ? await this.hashPassword(user.password)
       : null;
     const savedUser = await this.prismaService.user.upsert({
       where: {
@@ -37,7 +37,7 @@ export class UserService {
         email: user.email,
         password: hashedPassword,
         provider: user?.provider,
-        roles: ['USER'],
+        roles: ['USER', 'ADMIN'], // ADMIN FOR TESTING ONLY
       },
     });
     await this.cacheManager.set(savedUser.id, savedUser);
@@ -81,7 +81,7 @@ export class UserService {
     });
   }
 
-  private hashPassword(password: string) {
-    return hashSync(password, genSaltSync(10));
+  private async hashPassword(password: string) {
+    return await argon2.hash(password);
   }
 }

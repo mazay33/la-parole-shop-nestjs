@@ -9,12 +9,12 @@ import {
 import { LoginDto, RegisterDto } from './dto';
 import { UserService } from 'src/user/user.service';
 import { Tokens } from './interfaces';
-import { compareSync } from 'bcrypt';
 import { Provider, Token, User } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { v4 } from 'uuid';
 import { add } from 'date-fns';
+import * as argon2 from 'argon2';
 
 @Injectable()
 export class AuthService {
@@ -23,7 +23,7 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly prismaService: PrismaService,
-  ) {}
+  ) { }
 
   async refreshTokens(refreshToken: string, agent: string): Promise<Tokens> {
     const token = await this.prismaService.token.delete({
@@ -61,7 +61,7 @@ export class AuthService {
         this.logger.error(err);
         return null;
       });
-    if (!user || !compareSync(dto.password, user.password)) {
+    if (!user || !(await argon2.verify(user.password, dto.password))) {
       throw new UnauthorizedException('Неверный логин или пароль');
     }
     return this.generateTokens(user, agent);

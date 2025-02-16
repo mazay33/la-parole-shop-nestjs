@@ -1,0 +1,122 @@
+[
+  {
+    "name": "BAROCCO",
+    "price": 6600,
+    "discount": 0,
+    "stock": 99,
+    "isAvailable": true,
+    "sku": "BRCC-SET",
+    "categoryId": 1,
+    "subCategoryIds": [],
+    "cupSizes": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "clothingSizes": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "beltSizes": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  {
+    "name": "SOUL",
+    "price": 6600,
+    "discount": 0,
+    "stock": 99,
+    "isAvailable": true,
+    "sku": "SOUL-SET",
+    "categoryId": 1,
+    "subCategoryIds": [],
+    "cupSizes": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "clothingSizes": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "beltSizes": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  {
+    "name": "FLAWLESS",
+    "price": 6600,
+    "discount": 0,
+    "stock": 99,
+    "isAvailable": true,
+    "sku": "FLW-SET",
+    "categoryId": 1,
+    "subCategoryIds": [],
+    "cupSizes": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "clothingSizes": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "beltSizes": [
+      1,
+      2,
+      3,
+      4
+    ]
+  }
+]
