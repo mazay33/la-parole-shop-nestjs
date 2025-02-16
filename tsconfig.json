@@ -18,6 +18,9 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
+      "@prisma/client": [
+        "node_modules/@prisma/client"
+      ],
       "@common/": [
         "libs//src"
       ],
