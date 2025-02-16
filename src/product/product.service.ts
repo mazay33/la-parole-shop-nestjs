@@ -5,13 +5,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Product } from '@prisma/client';
-import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { promisify } from 'util';
 import { unlink } from 'fs';
 import { ProductConfigurationDto } from './dto/product-configuration.dto';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { PrismaService } from '../prisma/prisma.service';
+import { Product } from '@prisma/client';
 
 const unlinkAsync = promisify(unlink);
 
@@ -20,7 +20,7 @@ export class ProductService {
   constructor(
     private prisma: PrismaService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-  ) {}
+  ) { }
 
   async getProducts(
     page?: number,
@@ -166,16 +166,14 @@ export class ProductService {
           })),
         },
         cupSizes: {
-          connect:
-            createProductDto.cupSizes &&
-            createProductDto.cupSizes.length > 0 &&
-            createProductDto.cupSizes.map((size) => ({ id: size })),
+          connect: createProductDto.cupSizes && createProductDto.cupSizes.length > 0
+            ? createProductDto.cupSizes.map((size) => ({ id: size }))
+            : [],
         },
         clothingSizes: {
-          connect:
-            createProductDto.clothingSizes &&
-            createProductDto.clothingSizes.length > 0 &&
-            createProductDto.clothingSizes.map((size) => ({ id: size })),
+          connect: createProductDto.clothingSizes && createProductDto.clothingSizes.length > 0
+            ? createProductDto.clothingSizes.map((size) => ({ id: size }))
+            : [],
         },
         beltSizes: {
           connect: createProductDto.beltSizes.map((size) => ({ id: size })),
@@ -193,7 +191,8 @@ export class ProductService {
       },
     });
 
-    return await this.getProductById(newProduct.id);
+    // Return the newly created product directly
+    return newProduct;
   }
 
   // async updateProduct(
@@ -376,7 +375,7 @@ export class ProductService {
     id: number,
     photoId: number,
     filename: string,
-  ): Promise<Product> {
+  ) {
     const product = await this.prisma.product.findUnique({
       where: { id },
       include: { images: true },
@@ -406,7 +405,7 @@ export class ProductService {
     });
   }
 
-  async deleteProductPhoto(id: number, photoId: number): Promise<Product> {
+  async deleteProductPhoto(id: number, photoId: number) {
     const product = await this.prisma.product.findUnique({
       where: { id },
       include: { images: true },
@@ -435,7 +434,7 @@ export class ProductService {
     });
   }
 
-  async deleteAllProductPhotos(id: number): Promise<Product> {
+  async deleteAllProductPhotos(id: number) {
     const product = await this.prisma.product.findUnique({
       where: { id },
       include: { images: true },
